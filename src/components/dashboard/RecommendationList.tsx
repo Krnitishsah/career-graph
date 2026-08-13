@@ -7,7 +7,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import useRecommendations from "@/src/hooks/useRecommendations";
+import useRecommendations from "../../hooks/useRecommendations";
 
 export default function RecommendationList() {
   const {

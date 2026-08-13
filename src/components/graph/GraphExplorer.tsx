@@ -8,7 +8,7 @@ import GraphFilters from "./GraphFilters";
 import useCareerGraph, {
   type CareerGraph,
   type CareerSkill,
-} from "@/src/hooks/useCareerGraph";
+} from "../../hooks/useCareerGraph";
 
 export default function GraphExplorer() {
   const {

@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import RoleList from "./RoleList";
 import RoleSearch from "./RoleSearch";
 import RoleSummary from "./RoleSummary";
 
-import useRoles from "@/src/hooks/useRoles";
-import type { CareerRole } from "@/src/types/role";
+import useRoles from "../../hooks/useRoles";
+import type { Role } from "../../types/role";
 
 export default function RolesExplorer() {
   const {
@@ -36,16 +36,24 @@ export default function RolesExplorer() {
       const searchableValues = [
         role.name,
         role.category,
-        role.level,
+        role.experienceLevel,
         role.description,
         role.salaryRange,
-        ...(role.skills ?? []),
+
+        ...(role.skills ?? []).flatMap((skill) => [
+          skill.name,
+          skill.slug,
+          skill.category,
+        ]),
       ];
 
       return searchableValues
-        .filter(Boolean)
+        .filter(
+          (value): value is string =>
+            typeof value === "string" && value.length > 0,
+        )
         .some((value) =>
-          value!.toLowerCase().includes(query),
+          value.toLowerCase().includes(query),
         );
     });
   }, [roles, search]);
@@ -54,7 +62,7 @@ export default function RolesExplorer() {
   // SELECT ROLE
   // ============================================================
 
-  const handleRoleClick = (role: CareerRole) => {
+  const handleRoleClick = (role: Role) => {
     selectRole(role);
   };
 
@@ -67,10 +75,36 @@ export default function RolesExplorer() {
   };
 
   // ============================================================
+  // ESCAPE KEY + BODY SCROLL LOCK
+  // ============================================================
+
+  useEffect(() => {
+    if (!selectedRole) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        clearSelectedRole();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [selectedRole, clearSelectedRole]);
+
+  // ============================================================
   // EXPLORE ROLE
   // ============================================================
 
-  const handleExplore = (role: CareerRole) => {
+  const handleExplore = (role: Role) => {
     console.log("Explore role:", role);
 
     // Later:
@@ -90,8 +124,8 @@ export default function RolesExplorer() {
           </h1>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-            Discover career opportunities, required skills, salary
-            ranges, and related career paths.
+            Discover career opportunities, required skills,
+            salary ranges, and related career paths.
           </p>
         </div>
 
@@ -101,7 +135,9 @@ export default function RolesExplorer() {
               {filteredRoles.length}
             </span>{" "}
             <span className="text-sm text-muted-foreground">
-              {filteredRoles.length === 1 ? "role" : "roles"}
+              {filteredRoles.length === 1
+                ? "role"
+                : "roles"}
             </span>
           </div>
         )}
@@ -129,9 +165,11 @@ export default function RolesExplorer() {
           role="alert"
           className="
             rounded-xl
-            border border-destructive/20
+            border
+            border-destructive/20
             bg-destructive/5
-            px-4 py-3
+            px-4
+            py-3
           "
         >
           <p className="text-sm font-medium text-destructive">
@@ -154,8 +192,8 @@ export default function RolesExplorer() {
           </h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Select a role to view its details, salary information,
-            and required skills.
+            Select a role to view its details, salary
+            information, and required skills.
           </p>
         </div>
 

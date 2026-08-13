@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 import StatCard from "./StatCard";
-import useDashboard from "@/src/hooks/useDashboard";
+import useDashboard from "../../hooks/useDashboard";
 
 export default function DashboardOverview() {
   const { stats, loading, error } = useDashboard();

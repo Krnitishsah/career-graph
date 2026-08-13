@@ -1,33 +1,9 @@
-// ============================================================
-// ROLE TYPES
-// ============================================================
-
-// ============================================================
-// EXPERIENCE LEVEL
-// ============================================================
-
 export type ExperienceLevel =
   | "Entry"
   | "Junior"
   | "Mid"
   | "Senior"
   | "Lead";
-
-// ============================================================
-// ROLE
-// ============================================================
-
-export interface Role {
-  id: string;
-  name: string;
-  slug: string;
-  category: string;
-  description?: string;
-
-  experienceLevel?: ExperienceLevel;
-
-  skills?: RoleSkill[];
-}
 
 // ============================================================
 // ROLE SKILL
@@ -44,6 +20,24 @@ export interface RoleSkill {
 }
 
 // ============================================================
+// ROLE
+// ============================================================
+
+export interface Role {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+
+  description?: string;
+  salaryRange?: string;
+
+  experienceLevel?: ExperienceLevel;
+
+  skills?: RoleSkill[];
+}
+
+// ============================================================
 // CREATE ROLE INPUT
 // ============================================================
 
@@ -51,7 +45,9 @@ export interface CreateRoleInput {
   name: string;
   slug: string;
   category: string;
+
   description?: string | null;
+  salaryRange?: string | null;
 
   experienceLevel?: ExperienceLevel;
 
@@ -66,7 +62,9 @@ export interface UpdateRoleInput {
   name?: string;
   slug?: string;
   category?: string;
+
   description?: string | null;
+  salaryRange?: string | null;
 
   experienceLevel?: ExperienceLevel;
 

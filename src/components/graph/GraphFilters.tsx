@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import useCareerGraph, {
   type CareerSkill,
-} from "@/src/hooks/useCareerGraph";
+} from "../../hooks/useCareerGraph";
 
 interface GraphFiltersProps {
   selectedSkills: CareerSkill[];
