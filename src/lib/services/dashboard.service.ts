@@ -1,6 +1,6 @@
-import { getCognoDBSession } from "@/src/lib/cognodb";
+import { getCognoDBSession } from "../../lib/cognodb";
 
-import type { DashboardStats } from "@/src/types/dashboard";
+import type { DashboardStats } from "../../types/dashboard";
 
 /**
  * Get dashboard statistics from CognoDB.

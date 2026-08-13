@@ -7,13 +7,13 @@ import {
   useState,
 } from "react";
 
-import GraphFilters from "@/src/components/graph/GraphFilters";
+import GraphFilters from "../../components/graph/GraphFilters";
 
 import useCareerGraph, {
   type CareerRole,
   type CareerSkill,
   type CareerGraph,
-} from "@/src/hooks/useCareerGraph";
+} from "../../hooks/useCareerGraph";
 
 // ============================================================
 // PAGE

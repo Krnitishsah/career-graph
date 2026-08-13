@@ -1,7 +1,7 @@
+import DashboardOverview from "@/components/dashboard/DashboardOverview";
+import RecommendationList from "@/components/dashboard/RecommendationList";
 import type { Metadata } from "next";
 
-import DashboardOverview from "@/src/components/dashboard/DashboardOverview";
-import RecommendationList from "@/src/components/dashboard/RecommendationList";
 
 export const metadata: Metadata = {
   title: "Dashboard | Career Graph",

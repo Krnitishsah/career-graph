@@ -1,5 +1,5 @@
+import RolesExplorer from "@/components/roles/RolesExplorer";
 import type { Metadata } from "next";
-import RolesExplorer from "@/src/components/roles/RolesExplorer";
 
 export const metadata: Metadata = {
   title: "Roles | Career Graph",

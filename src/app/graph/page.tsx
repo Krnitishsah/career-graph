@@ -1,4 +1,4 @@
-import GraphExplorer from "@/src/components/graph/GraphExplorer";
+import GraphExplorer from "@/components/graph/GraphExplorer";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

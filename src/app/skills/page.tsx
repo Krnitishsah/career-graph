@@ -1,4 +1,4 @@
-import SkillsExplorer from "@/src/components/skills/SkillsExplorer";
+import SkillsExplorer from "@/components/skills/SkillsExplorer";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
