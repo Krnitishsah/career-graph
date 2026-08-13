@@ -1,0 +1,35 @@
+{
+  "name": "career-graph",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "seed": "dotenv -e .env.local -- tsx src/scripts/seed.ts",
+    "seed:skills": "dotenv -e .env.local -- tsx src/scripts/seed-skills.ts",
+    "seed:roles": "dotenv -e .env.local -- tsx src/scripts/seed-roles.ts",
+    "seed:relationships": "dotenv -e .env.local -- tsx src/scripts/seed-relationships.ts",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "lucide-react": "^1.31.0",
+    "neo4j-driver": "^6.2.0",
+    "next": "^16.3.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "dotenv-cli": "^11.0.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.0",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3"
+  }
+}
