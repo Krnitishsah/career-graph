@@ -7,8 +7,8 @@ import SkillList from "./SkillList";
 import SkillSearch from "./SkillSearch";
 import SkillSummary from "./SkillSummary";
 
-import useSkills from "@/src/hooks/useSkills";
-import type { Skill } from "@/src/types/skill";
+import useSkills from "../../hooks/useSkills";
+import type { Skill } from "../../types/skill";
 
 export default function SkillsExplorer() {
   const {
