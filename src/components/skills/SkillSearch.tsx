@@ -17,6 +17,10 @@ export default function SkillSearch({
 }: SkillSearchProps) {
   const hasValue = value.trim().length > 0;
 
+  const handleClear = () => {
+    onChange("");
+  };
+
   return (
     <div className="relative w-full">
       {/* Search Icon */}
@@ -41,14 +45,15 @@ export default function SkillSearch({
         disabled={disabled}
         autoComplete="off"
         className="
-          h-11 w-full appearance-none rounded-xl
+          h-11 w-full
+          rounded-xl
           border border-border
           bg-card
           pl-10 pr-11
           text-sm text-foreground
           shadow-sm
           outline-none
-          transition-all duration-200
+          transition-colors duration-200
 
           placeholder:text-muted-foreground
 
@@ -61,19 +66,21 @@ export default function SkillSearch({
           disabled:cursor-not-allowed
           disabled:opacity-60
 
-          [&::-webkit-search-cancel-button]:appearance-none
-          [&::-webkit-search-decoration]:appearance-none
+          [&::-webkit-search-cancel-button]:hidden
+          [&::-webkit-search-decoration]:hidden
         "
       />
 
-      {/* Clear Button */}
+      {/* Custom Clear Button */}
       {hasValue && !disabled && (
         <button
           type="button"
-          onClick={() => onChange("")}
+          onClick={handleClear}
           aria-label="Clear skill search"
+          title="Clear search"
           className="
             absolute right-2.5 top-1/2
+            z-10
             flex h-7 w-7
             -translate-y-1/2
             items-center justify-center
@@ -91,6 +98,7 @@ export default function SkillSearch({
         >
           <X
             size={15}
+            strokeWidth={2}
             aria-hidden="true"
           />
         </button>

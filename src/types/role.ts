@@ -1,3 +1,7 @@
+// ============================================================
+// EXPERIENCE LEVEL
+// ============================================================
+
 export type ExperienceLevel =
   | "Entry"
   | "Junior"
@@ -13,8 +17,13 @@ export interface RoleSkill {
   id: string;
   name: string;
   slug: string;
-  category?: string;
 
+  category?: string;
+  description?: string;
+
+  /**
+   * Optional metadata for role-skill relationship.
+   */
   importance?: number;
   required?: boolean;
 }
@@ -34,6 +43,9 @@ export interface Role {
 
   experienceLevel?: ExperienceLevel;
 
+  /**
+   * Required skills for this role.
+   */
   skills?: RoleSkill[];
 }
 
@@ -51,6 +63,12 @@ export interface CreateRoleInput {
 
   experienceLevel?: ExperienceLevel;
 
+  /**
+   * Skill IDs or skill slugs.
+   *
+   * These are used by the service to create
+   * Role -[:REQUIRES]-> Skill relationships.
+   */
   skills?: string[];
 }
 
@@ -68,7 +86,22 @@ export interface UpdateRoleInput {
 
   experienceLevel?: ExperienceLevel;
 
+  /**
+   * Skill IDs or skill slugs.
+   *
+   * If supplied, the service can synchronize
+   * the Role -[:REQUIRES]-> Skill relationships.
+   */
   skills?: string[];
+}
+
+// ============================================================
+// ROLE FILTERS
+// ============================================================
+
+export interface RoleFilters {
+  category?: string;
+  experienceLevel?: ExperienceLevel;
 }
 
 // ============================================================
@@ -89,7 +122,7 @@ export interface RoleQuery {
 // ============================================================
 
 export interface RoleSearchQuery {
-  search: string;
+  search?: string;
   category?: string;
   experienceLevel?: ExperienceLevel;
   limit?: number;
@@ -113,7 +146,7 @@ export interface RoleSummary {
   slug: string;
   category: string;
 
-  skillCount: number;
+  skillCount?: number;
   experienceLevel?: ExperienceLevel;
 }
 
@@ -128,7 +161,15 @@ export interface RoleDetail extends Role {
 }
 
 // ============================================================
-// ROLE RESPONSE
+// ROLE WITH RELATED ROLES
+// ============================================================
+
+export interface RoleWithRelatedRoles extends Role {
+  relatedRoles: RoleSummary[];
+}
+
+// ============================================================
+// ROLE LIST RESPONSE
 // ============================================================
 
 export interface RoleListResponse {

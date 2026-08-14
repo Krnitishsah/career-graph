@@ -34,50 +34,112 @@ export const experienceLevelSchema = z.enum([
 // ============================================================
 
 export const createRoleSchema = z.object({
+  // ----------------------------------------------------------
+  // NAME
+  // ----------------------------------------------------------
+
   name: z
     .string()
     .trim()
-    .min(2, "Role name must be at least 2 characters")
-    .max(100, "Role name must not exceed 100 characters"),
+    .min(
+      2,
+      "Role name must be at least 2 characters",
+    )
+    .max(
+      100,
+      "Role name must not exceed 100 characters",
+    ),
+
+  // ----------------------------------------------------------
+  // SLUG
+  // ----------------------------------------------------------
 
   slug: z
     .string()
     .trim()
-    .min(2, "Role slug is required")
-    .max(120, "Role slug must not exceed 120 characters")
+    .min(
+      2,
+      "Role slug is required",
+    )
+    .max(
+      120,
+      "Role slug must not exceed 120 characters",
+    )
     .regex(
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-      "Slug must contain only lowercase letters, numbers, and hyphens"
+      "Slug must contain only lowercase letters, numbers, and hyphens",
     ),
+
+  // ----------------------------------------------------------
+  // CATEGORY
+  // ----------------------------------------------------------
 
   category: z
     .string()
     .trim()
-    .min(2, "Role category is required")
-    .max(100, "Role category must not exceed 100 characters"),
+    .min(
+      2,
+      "Role category is required",
+    )
+    .max(
+      100,
+      "Role category must not exceed 100 characters",
+    ),
+
+  // ----------------------------------------------------------
+  // EXPERIENCE LEVEL
+  // ----------------------------------------------------------
+
+  experienceLevel:
+    experienceLevelSchema
+      .optional()
+      .nullable(),
+
+  // ----------------------------------------------------------
+  // DESCRIPTION
+  // ----------------------------------------------------------
 
   description: z
     .string()
     .trim()
     .max(
       1000,
-      "Description must not exceed 1000 characters"
+      "Description must not exceed 1000 characters",
     )
     .optional()
     .nullable(),
 
-  experienceLevel: experienceLevelSchema.optional(),
+  // ----------------------------------------------------------
+  // SALARY RANGE
+  // ----------------------------------------------------------
+
+  salaryRange: z
+    .string()
+    .trim()
+    .max(
+      100,
+      "Salary range must not exceed 100 characters",
+    )
+    .optional()
+    .nullable(),
+
+  // ----------------------------------------------------------
+  // SKILLS
+  // ----------------------------------------------------------
 
   skills: z
     .array(
       z
         .string()
         .trim()
-        .min(1, "Skill ID cannot be empty")
+        .min(
+          1,
+          "Skill ID cannot be empty",
+        ),
     )
     .max(
       100,
-      "A role cannot contain more than 100 skills"
+      "A role cannot contain more than 100 skills",
     )
     .optional()
     .default([]),
@@ -88,25 +150,7 @@ export const createRoleSchema = z.object({
 // ============================================================
 
 export const updateRoleSchema =
-  createRoleSchema.partial().extend({
-    name: z
-      .string()
-      .trim()
-      .min(2)
-      .max(100)
-      .optional(),
-
-    slug: z
-      .string()
-      .trim()
-      .min(2)
-      .max(120)
-      .regex(
-        /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-        "Invalid slug format"
-      )
-      .optional(),
-  });
+  createRoleSchema.partial();
 
 // ============================================================
 // ROLE ID PARAMS
@@ -116,7 +160,10 @@ export const roleIdSchema = z.object({
   id: z
     .string()
     .trim()
-    .min(1, "Role ID is required"),
+    .min(
+      1,
+      "Role ID is required",
+    ),
 });
 
 // ============================================================
@@ -127,7 +174,10 @@ export const roleSlugSchema = z.object({
   slug: z
     .string()
     .trim()
-    .min(1, "Role slug is required"),
+    .min(
+      1,
+      "Role slug is required",
+    ),
 });
 
 // ============================================================
@@ -138,10 +188,13 @@ export const roleSearchSchema = z.object({
   search: z
     .string()
     .trim()
-    .min(1, "Search query is required")
+    .min(
+      1,
+      "Search query is required",
+    )
     .max(
       100,
-      "Search query must not exceed 100 characters"
+      "Search query must not exceed 100 characters",
     ),
 
   category: z
@@ -193,6 +246,11 @@ export const roleQuerySchema = z.object({
     .string()
     .trim()
     .optional(),
+
+  slug: z
+    .string()
+    .trim()
+    .optional(),
 });
 
 // ============================================================
@@ -204,7 +262,10 @@ export const roleWithSkillsSchema =
     id: z
       .string()
       .trim()
-      .min(1, "Role ID is required"),
+      .min(
+        1,
+        "Role ID is required",
+      ),
 
     includeSkills: z
       .coerce
@@ -217,19 +278,19 @@ export const roleWithSkillsSchema =
 // ============================================================
 
 export function validateCreateRole(
-  value: unknown
+  value: unknown,
 ) {
   return createRoleSchema.parse(value);
 }
 
 export function validateUpdateRole(
-  value: unknown
+  value: unknown,
 ) {
   return updateRoleSchema.parse(value);
 }
 
 export function validateRoleId(
-  value: unknown
+  value: unknown,
 ) {
   return roleIdSchema.parse({
     id: value,
@@ -237,7 +298,7 @@ export function validateRoleId(
 }
 
 export function validateRoleSlug(
-  value: unknown
+  value: unknown,
 ) {
   return roleSlugSchema.parse({
     slug: value,
@@ -245,13 +306,13 @@ export function validateRoleSlug(
 }
 
 export function validateRoleQuery(
-  value: unknown
+  value: unknown,
 ) {
   return roleQuerySchema.parse(value);
 }
 
 export function validateRoleSearch(
-  value: unknown
+  value: unknown,
 ) {
   return roleSearchSchema.parse(value);
 }
@@ -261,13 +322,13 @@ export function validateRoleSearch(
 // ============================================================
 
 export function safeValidateCreateRole(
-  value: unknown
+  value: unknown,
 ) {
   return createRoleSchema.safeParse(value);
 }
 
 export function safeValidateUpdateRole(
-  value: unknown
+  value: unknown,
 ) {
   return updateRoleSchema.safeParse(value);
 }
@@ -277,7 +338,7 @@ export function safeValidateUpdateRole(
 // ============================================================
 
 export function getRoleValidationErrors(
-  error: unknown
+  error: unknown,
 ): Record<string, string[]> {
   if (!(error instanceof ZodError)) {
     return {
@@ -285,7 +346,8 @@ export function getRoleValidationErrors(
     };
   }
 
-  return error.flatten().fieldErrors as Record<
+  return error.flatten()
+    .fieldErrors as Record<
     string,
     string[]
   >;

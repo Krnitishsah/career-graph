@@ -1,5 +1,7 @@
 "use client";
 
+import type { KeyboardEvent } from "react";
+
 import {
   BriefcaseBusiness,
   Code2,
@@ -11,7 +13,7 @@ import {
 import type {
   CareerRole,
   CareerSkill,
-} from "@/src/hooks/useCareerGraph";
+} from "../../hooks/useCareerGraph";
 
 type GraphNodeData = CareerSkill | CareerRole;
 
@@ -26,7 +28,10 @@ interface GraphNodeProps {
 // CATEGORY ICONS
 // ============================================================
 
-const categoryIcons: Record<string, typeof Code2> = {
+const categoryIcons: Record<
+  string,
+  typeof Code2
+> = {
   Frontend: Code2,
   Backend: Server,
   Database,
@@ -51,7 +56,9 @@ export default function GraphNode({
 }: GraphNodeProps) {
   const isSkill = type === "skill";
 
-  const role = !isSkill ? (node as CareerRole) : null;
+  const role = isSkill
+    ? undefined
+    : (node as CareerRole);
 
   const Icon = isSkill
     ? categoryIcons[node.category] ?? Code2
@@ -62,11 +69,16 @@ export default function GraphNode({
   // ============================================================
 
   const handleKeyDown = (
-    event: React.KeyboardEvent<HTMLButtonElement>,
+    event: KeyboardEvent<HTMLButtonElement>,
   ) => {
-    if (!onClick) return;
+    if (!onClick) {
+      return;
+    }
 
-    if (event.key === "Enter" || event.key === " ") {
+    if (
+      event.key === "Enter" ||
+      event.key === " "
+    ) {
       event.preventDefault();
       onClick();
     }
@@ -81,7 +93,7 @@ export default function GraphNode({
       type="button"
       onClick={onClick}
       onKeyDown={handleKeyDown}
-      aria-label={`${type}: ${node.name}`}
+      aria-label={`${type === "skill" ? "Skill" : "Career role"}: ${node.name}`}
       aria-pressed={selected}
       className={`
         group
@@ -123,6 +135,7 @@ export default function GraphNode({
               focus:outline-none
               focus:ring-2
               focus:ring-primary/30
+              active:translate-y-0
             `
             : ""
         }
@@ -220,13 +233,13 @@ export default function GraphNode({
 
         {role?.level && (
           <span
+            title={role.level}
             className="
               truncate
               text-xs
               font-medium
               text-primary
             "
-            title={role.level}
           >
             {role.level}
           </span>
@@ -234,18 +247,20 @@ export default function GraphNode({
 
         {/* Match Score */}
 
-        {role?.matchScore !== undefined && (
-          <span
-            className="
-              whitespace-nowrap
-              text-xs
-              font-semibold
-              text-primary
-            "
-          >
-            {Math.round(role.matchScore)}% match
-          </span>
-        )}
+        {role?.matchScore !== undefined &&
+          Number.isFinite(role.matchScore) && (
+            <span
+              title={`${Math.round(role.matchScore)}% match`}
+              className="
+                whitespace-nowrap
+                text-xs
+                font-semibold
+                text-primary
+              "
+            >
+              {Math.round(role.matchScore)}% match
+            </span>
+          )}
       </div>
 
       {/* ========================================================

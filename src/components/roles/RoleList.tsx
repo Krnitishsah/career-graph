@@ -1,12 +1,26 @@
 import RoleCard from "./RoleCard";
-import type { CareerRole } from "@/src/types/role";
+
+import type { Role } from "../../types/role";
+
+// ============================================================
+// PROPS
+// ============================================================
 
 interface RoleListProps {
-  roles?: CareerRole[];
-  onRoleClick?: (role: CareerRole) => void;
+  roles?: Role[];
+
+  onRoleClick?: (
+    role: Role,
+  ) => void;
+
   emptyMessage?: string;
+
   loading?: boolean;
 }
+
+// ============================================================
+// COMPONENT
+// ============================================================
 
 export default function RoleList({
   roles = [],
@@ -21,19 +35,27 @@ export default function RoleList({
   if (loading) {
     return (
       <div
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        className="
+          grid grid-cols-1 gap-4
+          sm:grid-cols-2
+          lg:grid-cols-3
+        "
         aria-label="Loading roles"
         aria-busy="true"
       >
-        {Array.from({ length: 6 }).map((_, index) => (
-          <div
-            key={index}
-            className="
-              h-52 animate-pulse rounded-xl
-              border border-border bg-card
-            "
-          />
-        ))}
+        {Array.from({ length: 6 }).map(
+          (_, index) => (
+            <div
+              key={index}
+              className="
+                h-52 animate-pulse
+                rounded-xl
+                border border-border
+                bg-card
+              "
+            />
+          ),
+        )}
       </div>
     );
   }
@@ -46,12 +68,21 @@ export default function RoleList({
     return (
       <div
         className="
-          flex min-h-40 items-center justify-center
-          rounded-xl border border-dashed
-          border-border bg-card px-6
+          flex min-h-40
+          items-center justify-center
+          rounded-xl
+          border border-dashed
+          border-border
+          bg-card
+          px-6
         "
       >
-        <p className="text-center text-sm text-muted-foreground">
+        <p
+          className="
+            text-center text-sm
+            text-muted-foreground
+          "
+        >
           {emptyMessage}
         </p>
       </div>
@@ -72,13 +103,11 @@ export default function RoleList({
     >
       {roles.map((role, index) => (
         <RoleCard
-          key={role.id || `${role.slug}-${index}`}
-          name={role.name}
-          category={role.category}
-          level={role.level}
-          description={role.description}
-          relatedSkills={role.relatedSkills}
-          salaryRange={role.salaryRange}
+          key={
+            role.id ||
+            `${role.slug}-${index}`
+          }
+          role={role}
           onClick={
             onRoleClick
               ? () => onRoleClick(role)

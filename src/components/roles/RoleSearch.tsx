@@ -18,6 +18,7 @@ export default function RoleSearch({
   const hasValue = value.trim().length > 0;
 
   const handleClear = () => {
+    if (disabled) return;
     onChange("");
   };
 
@@ -29,7 +30,8 @@ export default function RoleSearch({
         aria-hidden="true"
         className="
           pointer-events-none absolute left-3.5 top-1/2 z-10
-          -translate-y-1/2 text-muted-foreground
+          -translate-y-1/2
+          text-muted-foreground
         "
       />
 
@@ -42,6 +44,7 @@ export default function RoleSearch({
         aria-label={placeholder}
         disabled={disabled}
         autoComplete="off"
+        spellCheck={false}
         className="
           h-11 w-full appearance-none rounded-xl
           border border-border
@@ -50,7 +53,7 @@ export default function RoleSearch({
           text-sm text-foreground
           shadow-sm
           outline-none
-          transition-all duration-200
+          transition-colors duration-200
 
           placeholder:text-muted-foreground
 
@@ -74,6 +77,7 @@ export default function RoleSearch({
           type="button"
           onClick={handleClear}
           aria-label="Clear role search"
+          title="Clear search"
           className="
             absolute right-2.5 top-1/2
             flex h-7 w-7
@@ -81,7 +85,7 @@ export default function RoleSearch({
             items-center justify-center
             rounded-lg
             text-muted-foreground
-            transition-colors
+            transition-colors duration-150
 
             hover:bg-secondary
             hover:text-foreground
@@ -93,6 +97,7 @@ export default function RoleSearch({
         >
           <X
             size={15}
+            strokeWidth={2}
             aria-hidden="true"
           />
         </button>

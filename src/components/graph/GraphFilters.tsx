@@ -45,7 +45,7 @@ export default function GraphFilters({
   disabled = false,
 }: GraphFiltersProps) {
   const {
-    skills,
+    skills = [],
     loading,
     error,
     getSkills,
@@ -71,16 +71,17 @@ export default function GraphFilters({
     const query = search.trim();
 
     if (!query) {
-      getSkills();
       return;
     }
 
-    const timer = setTimeout(() => {
+    const timer = window.setTimeout(() => {
       searchSkills(query);
     }, 300);
 
-    return () => clearTimeout(timer);
-  }, [search, getSkills, searchSkills]);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [search, searchSkills]);
 
   // ============================================================
   // CATEGORIES
@@ -96,7 +97,9 @@ export default function GraphFilters({
               Boolean(category),
           ),
       ),
-    ).sort();
+    ).sort((a, b) =>
+      a.localeCompare(b),
+    );
   }, [skills]);
 
   // ============================================================
@@ -104,11 +107,12 @@ export default function GraphFilters({
   // ============================================================
 
   const availableSkills = useMemo(() => {
+    const selectedIds = new Set(
+      selectedSkills.map((skill) => skill.id),
+    );
+
     return skills.filter(
-      (skill) =>
-        !selectedSkills.some(
-          (selected) => selected.id === skill.id,
-        ),
+      (skill) => !selectedIds.has(skill.id),
     );
   }, [skills, selectedSkills]);
 
@@ -116,9 +120,13 @@ export default function GraphFilters({
   // ADD SKILL
   // ============================================================
 
-  const handleAddSkill = (skill: CareerSkill) => {
+  const handleAddSkill = (
+    skill: CareerSkill,
+  ) => {
     onAddSkill(skill);
+
     setSearch("");
+
     clearError();
   };
 
@@ -126,8 +134,11 @@ export default function GraphFilters({
   // REMOVE SKILL
   // ============================================================
 
-  const handleRemoveSkill = (skillId: string) => {
+  const handleRemoveSkill = (
+    skillId: string,
+  ) => {
     onRemoveSkill(skillId);
+
     clearError();
   };
 
@@ -136,11 +147,16 @@ export default function GraphFilters({
   // ============================================================
 
   const handleApply = () => {
-    if (selectedSkills.length === 0) {
+    if (
+      disabled ||
+      loading ||
+      selectedSkills.length === 0
+    ) {
       return;
     }
 
     clearError();
+
     onApply(selectedSkills);
   };
 
@@ -149,8 +165,14 @@ export default function GraphFilters({
   // ============================================================
 
   const handleClear = () => {
+    if (disabled || loading) {
+      return;
+    }
+
     setSearch("");
+
     clearError();
+
     onReset();
   };
 
@@ -160,7 +182,9 @@ export default function GraphFilters({
 
   return (
     <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
-      {/* HEADER */}
+      {/* ========================================================
+          HEADER
+      ======================================================== */}
 
       <div className="mb-5">
         <h2 className="text-lg font-semibold text-foreground">
@@ -173,7 +197,9 @@ export default function GraphFilters({
         </p>
       </div>
 
-      {/* SEARCH */}
+      {/* ========================================================
+          SEARCH
+      ======================================================== */}
 
       <div>
         <label
@@ -211,79 +237,110 @@ export default function GraphFilters({
         />
       </div>
 
-      {/* CATEGORIES */}
+      {/* ========================================================
+          CATEGORIES
+      ======================================================== */}
 
       {categories.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <button
-              key={category}
-              type="button"
-              onClick={() => {
-                setSearch(category);
-                clearError();
-              }}
-              disabled={loading || disabled}
-              className="
-                rounded-full
-                border border-border
-                bg-background
-                px-3 py-1.5
-                text-xs font-medium
-                text-muted-foreground
-                transition-colors
-                hover:bg-secondary
-                hover:text-foreground
-                disabled:cursor-not-allowed
-                disabled:opacity-60
-              "
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-      )}
+        <div className="mt-4">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">
+            Categories
+          </p>
 
-      {/* SEARCH RESULTS */}
-
-      {search.trim() && !loading && (
-        <div className="mt-4 max-h-60 overflow-y-auto rounded-lg border border-border">
-          {availableSkills.length > 0 ? (
-            availableSkills.map((skill) => (
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => (
               <button
-                key={skill.id}
+                key={category}
                 type="button"
-                onClick={() => handleAddSkill(skill)}
-                disabled={disabled}
+                onClick={() => {
+                  setSearch(category);
+                  clearError();
+                }}
+                disabled={loading || disabled}
                 className="
-                  flex w-full items-center justify-between
-                  gap-4
-                  border-b border-border
-                  px-4 py-3
-                  text-left
-                  last:border-b-0
+                  rounded-full
+                  border border-border
+                  bg-background
+                  px-3 py-1.5
+                  text-xs font-medium
+                  text-muted-foreground
+                  transition-colors
                   hover:bg-secondary
+                  hover:text-foreground
                   disabled:cursor-not-allowed
                   disabled:opacity-60
                 "
               >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {skill.name}
-                  </p>
-
-                  {skill.category && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {skill.category}
-                    </p>
-                  )}
-                </div>
-
-                <span className="shrink-0 text-xs font-medium text-primary">
-                  Add
-                </span>
+                {category}
               </button>
-            ))
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          SEARCH RESULTS
+      ======================================================== */}
+
+      {search.trim() && (
+        <div className="mt-4 overflow-hidden rounded-lg border border-border">
+          {loading ? (
+            <div className="space-y-3 p-4">
+              {Array.from({ length: 3 }).map(
+                (_, index) => (
+                  <div
+                    key={index}
+                    className="
+                      h-12
+                      animate-pulse
+                      rounded-md
+                      bg-muted
+                    "
+                  />
+                ),
+              )}
+            </div>
+          ) : availableSkills.length > 0 ? (
+            <div className="max-h-60 overflow-y-auto">
+              {availableSkills.map((skill) => (
+                <button
+                  key={skill.id}
+                  type="button"
+                  onClick={() =>
+                    handleAddSkill(skill)
+                  }
+                  disabled={disabled}
+                  className="
+                    flex w-full items-center
+                    justify-between
+                    gap-4
+                    border-b border-border
+                    px-4 py-3
+                    text-left
+                    last:border-b-0
+                    hover:bg-secondary
+                    disabled:cursor-not-allowed
+                    disabled:opacity-60
+                  "
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {skill.name}
+                    </p>
+
+                    {skill.category && (
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        {skill.category}
+                      </p>
+                    )}
+                  </div>
+
+                  <span className="shrink-0 text-xs font-medium text-primary">
+                    Add
+                  </span>
+                </button>
+              ))}
+            </div>
           ) : (
             <p className="px-4 py-4 text-sm text-muted-foreground">
               No skills found.
@@ -292,11 +349,13 @@ export default function GraphFilters({
         </div>
       )}
 
-      {/* SELECTED SKILLS */}
+      {/* ========================================================
+          SELECTED SKILLS
+      ======================================================== */}
 
       {selectedSkills.length > 0 && (
         <div className="mt-5">
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-2 flex items-center justify-between gap-3">
             <span className="text-sm font-medium text-foreground">
               Selected Skills
             </span>
@@ -330,7 +389,9 @@ export default function GraphFilters({
                   disabled:opacity-60
                 "
               >
-                <span>{skill.name}</span>
+                <span className="max-w-48 truncate">
+                  {skill.name}
+                </span>
 
                 <span
                   aria-hidden="true"
@@ -344,7 +405,9 @@ export default function GraphFilters({
         </div>
       )}
 
-      {/* GRAPH OPTIONS */}
+      {/* ========================================================
+          GRAPH OPTIONS
+      ======================================================== */}
 
       <div className="mt-5 grid grid-cols-1 gap-4 border-t border-border pt-5 sm:grid-cols-3">
         {/* NODE TYPE */}
@@ -361,9 +424,11 @@ export default function GraphFilters({
             id="graph-node-type"
             value={nodeType}
             onChange={(event) =>
-              onNodeTypeChange(event.target.value)
+              onNodeTypeChange(
+                event.target.value,
+              )
             }
-            disabled={disabled}
+            disabled={disabled || loading}
             className="
               h-10 w-full rounded-lg
               border border-border
@@ -378,9 +443,17 @@ export default function GraphFilters({
               disabled:opacity-60
             "
           >
-            <option value="">All nodes</option>
-            <option value="skill">Skills only</option>
-            <option value="role">Roles only</option>
+            <option value="">
+              All nodes
+            </option>
+
+            <option value="skill">
+              Skills only
+            </option>
+
+            <option value="role">
+              Roles only
+            </option>
           </select>
         </div>
 
@@ -398,9 +471,11 @@ export default function GraphFilters({
             id="graph-relationship"
             value={relationship}
             onChange={(event) =>
-              onRelationshipChange(event.target.value)
+              onRelationshipChange(
+                event.target.value,
+              )
             }
-            disabled={disabled}
+            disabled={disabled || loading}
             className="
               h-10 w-full rounded-lg
               border border-border
@@ -415,7 +490,9 @@ export default function GraphFilters({
               disabled:opacity-60
             "
           >
-            <option value="">All relationships</option>
+            <option value="">
+              All relationships
+            </option>
 
             <option value="REQUIRES">
               Required Skills
@@ -441,9 +518,11 @@ export default function GraphFilters({
             id="graph-limit"
             value={limit}
             onChange={(event) =>
-              onLimitChange(Number(event.target.value))
+              onLimitChange(
+                Number(event.target.value),
+              )
             }
-            disabled={disabled}
+            disabled={disabled || loading}
             className="
               h-10 w-full rounded-lg
               border border-border
@@ -458,15 +537,28 @@ export default function GraphFilters({
               disabled:opacity-60
             "
           >
-            <option value={10}>10 roles</option>
-            <option value={25}>25 roles</option>
-            <option value={50}>50 roles</option>
-            <option value={100}>100 roles</option>
+            <option value={10}>
+              10 roles
+            </option>
+
+            <option value={25}>
+              25 roles
+            </option>
+
+            <option value={50}>
+              50 roles
+            </option>
+
+            <option value={100}>
+              100 roles
+            </option>
           </select>
         </div>
       </div>
 
-      {/* ERROR */}
+      {/* ========================================================
+          ERROR
+      ======================================================== */}
 
       {error && (
         <div
@@ -484,7 +576,9 @@ export default function GraphFilters({
         </div>
       )}
 
-      {/* ACTIONS */}
+      {/* ========================================================
+          ACTIONS
+      ======================================================== */}
 
       <div className="mt-5 flex flex-col gap-2 sm:flex-row">
         <button
@@ -509,7 +603,9 @@ export default function GraphFilters({
             disabled:opacity-50
           "
         >
-          {loading ? "Loading..." : "Explore Graph"}
+          {loading
+            ? "Loading..."
+            : "Explore Graph"}
         </button>
 
         <button
@@ -518,7 +614,8 @@ export default function GraphFilters({
           disabled={
             disabled ||
             loading ||
-            (!search && selectedSkills.length === 0)
+            (!search &&
+              selectedSkills.length === 0)
           }
           className="
             inline-flex h-10

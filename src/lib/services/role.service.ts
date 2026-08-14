@@ -2,7 +2,7 @@
 // ROLE SERVICE
 // ============================================================
 
-import type { Node } from "neo4j-driver";
+import type { Record as Neo4jRecord } from "neo4j-driver";
 
 import { getCognoDBDriver } from "../cognodb";
 
@@ -24,17 +24,30 @@ import {
 
 import type {
   CreateRoleInput,
+  UpdateRoleInput,
   Role,
+  RoleSkill,
   RoleWithSkills,
   RoleWithRelatedRoles,
+  RoleSummary,
+  ExperienceLevel,
 } from "../../types/role";
+
+// ============================================================
+// TYPES
+// ============================================================
+
+export interface RoleFilters {
+  category?: string;
+  experienceLevel?: ExperienceLevel;
+}
 
 // ============================================================
 // HELPERS
 // ============================================================
 
 function getStringValue(
-  value: unknown
+  value: unknown,
 ): string | undefined {
   if (value === null || value === undefined) {
     return undefined;
@@ -43,34 +56,212 @@ function getStringValue(
   return String(value);
 }
 
-function mapRoleNode(node: Node): Role {
-  const properties = node.properties;
+function getExperienceLevel(
+  value: unknown,
+): ExperienceLevel | undefined {
+  const level = getStringValue(value);
+
+  if (
+    level === "Entry" ||
+    level === "Junior" ||
+    level === "Mid" ||
+    level === "Senior" ||
+    level === "Lead"
+  ) {
+    return level;
+  }
+
+  return undefined;
+}
+
+// ============================================================
+// MAP SKILL
+// ============================================================
+
+function mapSkill(
+  skill: unknown,
+): RoleSkill | null {
+  if (!skill) {
+    return null;
+  }
+
+  const properties =
+    typeof skill === "object" &&
+    skill !== null &&
+    "properties" in skill
+      ? (skill as { properties?: Record<string, unknown> })
+          .properties ?? {}
+      : (skill as Record<string, unknown>);
+
+  const id = getStringValue(properties.id);
+
+  if (!id) {
+    return null;
+  }
 
   return {
-    id: getStringValue(properties.id) ?? "",
-    name: getStringValue(properties.name) ?? "",
-    slug: getStringValue(properties.slug) ?? "",
-    category: getStringValue(properties.category) ?? "",
-    level: getStringValue(properties.level),
-    description: getStringValue(properties.description),
-    salaryRange: getStringValue(properties.salaryRange),
+    id,
+    name:
+      getStringValue(properties.name) ?? "",
+    slug:
+      getStringValue(properties.slug) ?? "",
+    category:
+      getStringValue(properties.category),
+    description:
+      getStringValue(properties.description),
+    importance:
+      typeof properties.importance === "number"
+        ? properties.importance
+        : undefined,
+    required:
+      typeof properties.required === "boolean"
+        ? properties.required
+        : undefined,
   };
 }
 
-function mapRoleRecord(record: any): Role {
+// ============================================================
+// MAP SKILLS FROM RECORD
+// ============================================================
+
+function mapRecordSkills(
+  record: Neo4jRecord,
+): RoleSkill[] {
+  const rawSkills = record.get("skills");
+
+  if (!Array.isArray(rawSkills)) {
+    return [];
+  }
+
+  return rawSkills
+    .map(mapSkill)
+    .filter(
+      (skill): skill is RoleSkill =>
+        Boolean(skill),
+    );
+}
+
+// ============================================================
+// MAP ROLE RECORD
+// ============================================================
+
+function mapRoleRecord(
+  record: Neo4jRecord,
+): Role {
   return {
-    id: getStringValue(record.get("id")) ?? "",
-    name: getStringValue(record.get("name")) ?? "",
-    slug: getStringValue(record.get("slug")) ?? "",
+    id:
+      getStringValue(
+        record.get("id"),
+      ) ?? "",
+
+    name:
+      getStringValue(
+        record.get("name"),
+      ) ?? "",
+
+    slug:
+      getStringValue(
+        record.get("slug"),
+      ) ?? "",
+
     category:
-      getStringValue(record.get("category")) ?? "",
-    level: getStringValue(record.get("level")),
-    description: getStringValue(
-      record.get("description")
-    ),
-    salaryRange: getStringValue(
-      record.get("salaryRange")
-    ),
+      getStringValue(
+        record.get("category"),
+      ) ?? "",
+
+    experienceLevel:
+      getExperienceLevel(
+        record.get(
+          "experienceLevel",
+        ),
+      ),
+
+    description:
+      getStringValue(
+        record.get(
+          "description",
+        ),
+      ),
+
+    salaryRange:
+      getStringValue(
+        record.get(
+          "salaryRange",
+        ),
+      ),
+
+    skills:
+      mapRecordSkills(record),
+  };
+}
+
+// ============================================================
+// MAP ROLE WITH SKILLS
+// ============================================================
+
+function mapRoleWithSkills(
+  record: Neo4jRecord,
+): RoleWithSkills {
+  const role = mapRoleRecord(record);
+
+  return {
+    ...role,
+    skills:
+      mapRecordSkills(record),
+  };
+}
+
+// ============================================================
+// MAP ROLE SUMMARY
+// ============================================================
+
+function mapRoleSummary(
+  role: unknown,
+): RoleSummary | null {
+  if (!role) {
+    return null;
+  }
+
+  const properties =
+    typeof role === "object" &&
+    role !== null &&
+    "properties" in role
+      ? (
+          role as {
+            properties?: Record<string, unknown>;
+          }
+        ).properties ?? {}
+      : (role as Record<string, unknown>);
+
+  const id =
+    getStringValue(properties.id);
+
+  if (!id) {
+    return null;
+  }
+
+  return {
+    id,
+
+    name:
+      getStringValue(
+        properties.name,
+      ) ?? "",
+
+    slug:
+      getStringValue(
+        properties.slug,
+      ) ?? "",
+
+    category:
+      getStringValue(
+        properties.category,
+      ) ?? "",
+
+    experienceLevel:
+      getExperienceLevel(
+        properties.experienceLevel,
+      ),
   };
 }
 
@@ -78,17 +269,122 @@ function mapRoleRecord(record: any): Role {
 // GET ALL ROLES
 // ============================================================
 
-export async function getAllRoles(): Promise<Role[]> {
+export async function getAllRoles(
+  filters?: RoleFilters,
+): Promise<Role[]> {
   const driver = getCognoDBDriver();
-
   const session = driver.session();
 
   try {
-    const result = await session.run(
-      GET_ALL_ROLES
-    );
+    // --------------------------------------------------------
+    // CATEGORY + EXPERIENCE LEVEL
+    // --------------------------------------------------------
 
-    return result.records.map(mapRoleRecord);
+    if (
+      filters?.category &&
+      filters?.experienceLevel
+    ) {
+      const result =
+        await session.run(
+          `
+            MATCH (r:Role)
+
+            WHERE
+              r.category = $category
+              AND
+              r.experienceLevel = $experienceLevel
+
+            OPTIONAL MATCH
+              (r)-[:REQUIRES]->(s:Skill)
+
+            RETURN
+              r.id AS id,
+              r.name AS name,
+              r.slug AS slug,
+              r.category AS category,
+              r.experienceLevel AS experienceLevel,
+              r.description AS description,
+              r.salaryRange AS salaryRange,
+
+              collect(
+                CASE
+                  WHEN s IS NULL THEN NULL
+                  ELSE {
+                    id: s.id,
+                    name: s.name,
+                    slug: s.slug,
+                    category: s.category,
+                    description: s.description
+                  }
+                END
+              ) AS skills
+
+            ORDER BY r.name ASC
+          `,
+          {
+            category:
+              filters.category.trim(),
+
+            experienceLevel:
+              filters.experienceLevel,
+          },
+        );
+
+      return result.records.map(
+        mapRoleRecord,
+      );
+    }
+
+    // --------------------------------------------------------
+    // CATEGORY ONLY
+    // --------------------------------------------------------
+
+    if (filters?.category) {
+      const result =
+        await session.run(
+          GET_ROLES_BY_CATEGORY,
+          {
+            category:
+              filters.category.trim(),
+          },
+        );
+
+      return result.records.map(
+        mapRoleRecord,
+      );
+    }
+
+    // --------------------------------------------------------
+    // EXPERIENCE LEVEL ONLY
+    // --------------------------------------------------------
+
+    if (filters?.experienceLevel) {
+      const result =
+        await session.run(
+          GET_ROLES_BY_LEVEL,
+          {
+            experienceLevel:
+              filters.experienceLevel,
+          },
+        );
+
+      return result.records.map(
+        mapRoleRecord,
+      );
+    }
+
+    // --------------------------------------------------------
+    // ALL ROLES
+    // --------------------------------------------------------
+
+    const result =
+      await session.run(
+        GET_ALL_ROLES,
+      );
+
+    return result.records.map(
+      mapRoleRecord,
+    );
   } finally {
     await session.close();
   }
@@ -99,27 +395,31 @@ export async function getAllRoles(): Promise<Role[]> {
 // ============================================================
 
 export async function getRoleById(
-  id: string
-): Promise<Role | null> {
-  if (!id) {
+  id: string,
+): Promise<RoleWithSkills | null> {
+  if (!id?.trim()) {
     return null;
   }
 
   const driver = getCognoDBDriver();
-
   const session = driver.session();
 
   try {
-    const result = await session.run(
-      GET_ROLE_BY_ID,
-      { id }
-    );
+    const result =
+      await session.run(
+        GET_ROLE_BY_ID,
+        {
+          id: id.trim(),
+        },
+      );
 
     if (!result.records.length) {
       return null;
     }
 
-    return mapRoleRecord(result.records[0]);
+    return mapRoleWithSkills(
+      result.records[0],
+    );
   } finally {
     await session.close();
   }
@@ -130,27 +430,31 @@ export async function getRoleById(
 // ============================================================
 
 export async function getRoleBySlug(
-  slug: string
-): Promise<Role | null> {
-  if (!slug) {
+  slug: string,
+): Promise<RoleWithSkills | null> {
+  if (!slug?.trim()) {
     return null;
   }
 
   const driver = getCognoDBDriver();
-
   const session = driver.session();
 
   try {
-    const result = await session.run(
-      GET_ROLE_BY_SLUG,
-      { slug }
-    );
+    const result =
+      await session.run(
+        GET_ROLE_BY_SLUG,
+        {
+          slug: slug.trim(),
+        },
+      );
 
     if (!result.records.length) {
       return null;
     }
 
-    return mapRoleRecord(result.records[0]);
+    return mapRoleWithSkills(
+      result.records[0],
+    );
   } finally {
     await session.close();
   }
@@ -161,25 +465,27 @@ export async function getRoleBySlug(
 // ============================================================
 
 export async function searchRoles(
-  search: string
+  search: string,
 ): Promise<Role[]> {
   if (!search?.trim()) {
     return getAllRoles();
   }
 
   const driver = getCognoDBDriver();
-
   const session = driver.session();
 
   try {
-    const result = await session.run(
-      SEARCH_ROLES,
-      {
-        search: search.trim(),
-      }
-    );
+    const result =
+      await session.run(
+        SEARCH_ROLES,
+        {
+          search: search.trim(),
+        },
+      );
 
-    return result.records.map(mapRoleRecord);
+    return result.records.map(
+      mapRoleRecord,
+    );
   } finally {
     await session.close();
   }
@@ -190,23 +496,28 @@ export async function searchRoles(
 // ============================================================
 
 export async function getRolesByCategory(
-  category: string
+  category: string,
 ): Promise<Role[]> {
-  if (!category) {
+  if (!category?.trim()) {
     return [];
   }
 
   const driver = getCognoDBDriver();
-
   const session = driver.session();
 
   try {
-    const result = await session.run(
-      GET_ROLES_BY_CATEGORY,
-      { category }
-    );
+    const result =
+      await session.run(
+        GET_ROLES_BY_CATEGORY,
+        {
+          category:
+            category.trim(),
+        },
+      );
 
-    return result.records.map(mapRoleRecord);
+    return result.records.map(
+      mapRoleRecord,
+    );
   } finally {
     await session.close();
   }
@@ -217,23 +528,27 @@ export async function getRolesByCategory(
 // ============================================================
 
 export async function getRolesByLevel(
-  level: string
+  level: ExperienceLevel,
 ): Promise<Role[]> {
-  if (!level) {
+  if (!level?.trim()) {
     return [];
   }
 
   const driver = getCognoDBDriver();
-
   const session = driver.session();
 
   try {
-    const result = await session.run(
-      GET_ROLES_BY_LEVEL,
-      { level }
-    );
+    const result =
+      await session.run(
+        GET_ROLES_BY_LEVEL,
+        {
+          experienceLevel: level,
+        },
+      );
 
-    return result.records.map(mapRoleRecord);
+    return result.records.map(
+      mapRoleRecord,
+    );
   } finally {
     await session.close();
   }
@@ -244,50 +559,69 @@ export async function getRolesByLevel(
 // ============================================================
 
 export async function createRole(
-  input: CreateRoleInput
+  input: CreateRoleInput,
 ): Promise<Role> {
-  if (!input.name) {
-    throw new Error("Role name is required");
+  if (!input.name?.trim()) {
+    throw new Error(
+      "Role name is required",
+    );
   }
 
-  if (!input.slug) {
-    throw new Error("Role slug is required");
+  if (!input.slug?.trim()) {
+    throw new Error(
+      "Role slug is required",
+    );
   }
 
-  if (!input.category) {
-    throw new Error("Role category is required");
+  if (!input.category?.trim()) {
+    throw new Error(
+      "Role category is required",
+    );
   }
 
   const driver = getCognoDBDriver();
-
   const session = driver.session();
 
   try {
     const id = crypto.randomUUID();
 
-    const result = await session.run(
-      CREATE_ROLE,
-      {
-        id,
-        name: input.name,
-        slug: input.slug,
-        category: input.category,
-        level: input.level ?? null,
-        description:
-          input.description ?? null,
-        salaryRange:
-          input.salaryRange ?? null,
-      }
-    );
+    const result =
+      await session.run(
+        CREATE_ROLE,
+        {
+          id,
+
+          name:
+            input.name.trim(),
+
+          slug:
+            input.slug.trim(),
+
+          category:
+            input.category.trim(),
+
+          experienceLevel:
+            input.experienceLevel ??
+            null,
+
+          description:
+            input.description?.trim() ??
+            null,
+
+          salaryRange:
+            input.salaryRange?.trim() ??
+            null,
+        },
+      );
 
     if (!result.records.length) {
       throw new Error(
-        "Failed to create role"
+        "Failed to create role",
       );
     }
 
     return mapRoleRecord(
-      result.records[0]
+      result.records[0],
     );
   } finally {
     await session.close();
@@ -300,38 +634,59 @@ export async function createRole(
 
 export async function updateRole(
   id: string,
-  input: CreateRoleInput
+  input: UpdateRoleInput,
 ): Promise<Role | null> {
-  if (!id) {
+  if (!id?.trim()) {
     return null;
   }
 
   const driver = getCognoDBDriver();
-
   const session = driver.session();
 
   try {
-    const result = await session.run(
-      UPDATE_ROLE,
-      {
-        id,
-        name: input.name,
-        slug: input.slug,
-        category: input.category,
-        level: input.level ?? null,
-        description:
-          input.description ?? null,
-        salaryRange:
-          input.salaryRange ?? null,
-      }
-    );
+    const result =
+      await session.run(
+        UPDATE_ROLE,
+        {
+          id: id.trim(),
+
+          name:
+            input.name !== undefined
+              ? input.name.trim()
+              : null,
+
+          slug:
+            input.slug !== undefined
+              ? input.slug.trim()
+              : null,
+
+          category:
+            input.category !== undefined
+              ? input.category.trim()
+              : null,
+
+          experienceLevel:
+            input.experienceLevel ??
+            null,
+
+          description:
+            input.description !== undefined
+              ? input.description
+              : null,
+
+          salaryRange:
+            input.salaryRange !== undefined
+              ? input.salaryRange
+              : null,
+        },
+      );
 
     if (!result.records.length) {
       return null;
     }
 
     return mapRoleRecord(
-      result.records[0]
+      result.records[0],
     );
   } finally {
     await session.close();
@@ -343,27 +698,32 @@ export async function updateRole(
 // ============================================================
 
 export async function deleteRole(
-  id: string
+  id: string,
 ): Promise<boolean> {
-  if (!id) {
+  if (!id?.trim()) {
     return false;
   }
 
   const driver = getCognoDBDriver();
-
   const session = driver.session();
 
   try {
-    const result = await session.run(
-      DELETE_ROLE,
-      { id }
-    );
+    const result =
+      await session.run(
+        DELETE_ROLE,
+        {
+          id: id.trim(),
+        },
+      );
 
-    const deleted = result.records[0]?.get(
-      "deleted"
-    );
+    const deleted =
+      result.records[0]?.get(
+        "deleted",
+      );
 
-    return Number(deleted ?? 0) > 0;
+    return Number(
+      deleted ?? 0,
+    ) > 0;
   } finally {
     await session.close();
   }
@@ -374,80 +734,31 @@ export async function deleteRole(
 // ============================================================
 
 export async function getRoleWithSkills(
-  id: string
+  id: string,
 ): Promise<RoleWithSkills | null> {
-  if (!id) {
+  if (!id?.trim()) {
     return null;
   }
 
   const driver = getCognoDBDriver();
-
   const session = driver.session();
 
   try {
-    const result = await session.run(
-      GET_ROLE_SKILLS,
-      { id }
-    );
+    const result =
+      await session.run(
+        GET_ROLE_SKILLS,
+        {
+          id: id.trim(),
+        },
+      );
 
     if (!result.records.length) {
       return null;
     }
 
-    const record = result.records[0];
-
-    const role: Role = {
-      id:
-        getStringValue(record.get("id")) ??
-        "",
-      name:
-        getStringValue(record.get("name")) ??
-        "",
-      slug:
-        getStringValue(record.get("slug")) ??
-        "",
-      category:
-        getStringValue(
-          record.get("category")
-        ) ?? "",
-      level: getStringValue(
-        record.get("level")
-      ),
-      description: getStringValue(
-        record.get("description")
-      ),
-      salaryRange: getStringValue(
-        record.get("salaryRange")
-      ),
-    };
-
-    const skills =
-      (record.get("skills") as any[]) ?? [];
-
-    return {
-      ...role,
-      skills: skills
-        .filter(Boolean)
-        .map((skill) => ({
-          id:
-            getStringValue(skill.id) ??
-            "",
-          name:
-            getStringValue(skill.name) ??
-            "",
-          slug:
-            getStringValue(skill.slug) ??
-            "",
-          category:
-            getStringValue(
-              skill.category
-            ) ?? "",
-          description:
-            getStringValue(
-              skill.description
-            ),
-        })),
-    };
+    return mapRoleWithSkills(
+      result.records[0],
+    );
   } finally {
     await session.close();
   }
@@ -458,91 +769,92 @@ export async function getRoleWithSkills(
 // ============================================================
 
 export async function getRoleWithRelatedRoles(
-  id: string
+  id: string,
 ): Promise<RoleWithRelatedRoles | null> {
-  if (!id) {
+  if (!id?.trim()) {
     return null;
   }
 
   const driver = getCognoDBDriver();
-
   const session = driver.session();
 
   try {
-    const result = await session.run(
-      GET_ROLE_WITH_RELATED_ROLES,
-      { id }
-    );
+    const result =
+      await session.run(
+        GET_ROLE_WITH_RELATED_ROLES,
+        {
+          id: id.trim(),
+        },
+      );
 
     if (!result.records.length) {
       return null;
     }
 
-    const record = result.records[0];
+    const record =
+      result.records[0];
 
     const role: Role = {
       id:
-        getStringValue(record.get("id")) ??
-        "",
+        getStringValue(
+          record.get("id"),
+        ) ?? "",
+
       name:
-        getStringValue(record.get("name")) ??
-        "",
+        getStringValue(
+          record.get("name"),
+        ) ?? "",
+
       slug:
-        getStringValue(record.get("slug")) ??
-        "",
+        getStringValue(
+          record.get("slug"),
+        ) ?? "",
+
       category:
         getStringValue(
-          record.get("category")
+          record.get("category"),
         ) ?? "",
-      level: getStringValue(
-        record.get("level")
-      ),
-      description: getStringValue(
-        record.get("description")
-      ),
-      salaryRange: getStringValue(
-        record.get("salaryRange")
-      ),
+
+      experienceLevel:
+        getExperienceLevel(
+          record.get(
+            "experienceLevel",
+          ),
+        ),
+
+      description:
+        getStringValue(
+          record.get("description"),
+        ),
+
+      salaryRange:
+        getStringValue(
+          record.get("salaryRange"),
+        ),
     };
 
-    const relatedRoles =
-      (record.get("relatedRoles") as any[]) ??
-      [];
+    const rawRelatedRoles =
+      record.get(
+        "relatedRoles",
+      );
+
+    const relatedRoles: RoleSummary[] =
+      Array.isArray(
+        rawRelatedRoles,
+      )
+        ? rawRelatedRoles
+            .map(mapRoleSummary)
+            .filter(
+              (
+                relatedRole,
+              ): relatedRole is RoleSummary =>
+                Boolean(relatedRole),
+            )
+        : [];
 
     return {
       ...role,
-      relatedRoles: relatedRoles
-        .filter(Boolean)
-        .map((relatedRole) => ({
-          id:
-            getStringValue(
-              relatedRole.id
-            ) ?? "",
-          name:
-            getStringValue(
-              relatedRole.name
-            ) ?? "",
-          slug:
-            getStringValue(
-              relatedRole.slug
-            ) ?? "",
-          category:
-            getStringValue(
-              relatedRole.category
-            ) ?? "",
-          level:
-            getStringValue(
-              relatedRole.level
-            ),
-          description:
-            getStringValue(
-              relatedRole.description
-            ),
-          salaryRange:
-            getStringValue(
-              relatedRole.salaryRange
-            ),
-        })),
+      relatedRoles,
     };
   } finally {
     await session.close();
@@ -555,27 +867,35 @@ export async function getRoleWithRelatedRoles(
 
 export async function roleExists(
   id?: string,
-  slug?: string
+  slug?: string,
 ): Promise<boolean> {
-  if (!id && !slug) {
+  if (
+    !id?.trim() &&
+    !slug?.trim()
+  ) {
     return false;
   }
 
   const driver = getCognoDBDriver();
-
   const session = driver.session();
 
   try {
-    const result = await session.run(
-      ROLE_EXISTS,
-      {
-        id: id ?? "",
-        slug: slug ?? "",
-      }
-    );
+    const result =
+      await session.run(
+        ROLE_EXISTS,
+        {
+          id:
+            id?.trim() ?? "",
+
+          slug:
+            slug?.trim() ?? "",
+        },
+      );
 
     return Boolean(
-      result.records[0]?.get("exists")
+      result.records[0]?.get(
+        "exists",
+      ),
     );
   } finally {
     await session.close();
@@ -588,16 +908,18 @@ export async function roleExists(
 
 export async function countRoles(): Promise<number> {
   const driver = getCognoDBDriver();
-
   const session = driver.session();
 
   try {
-    const result = await session.run(
-      COUNT_ROLES
-    );
+    const result =
+      await session.run(
+        COUNT_ROLES,
+      );
 
     return Number(
-      result.records[0]?.get("count") ?? 0
+      result.records[0]?.get(
+        "count",
+      ) ?? 0,
     );
   } finally {
     await session.close();

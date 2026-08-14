@@ -2,8 +2,6 @@
 // SKILL SERVICE
 // ============================================================
 
-import type { Node } from "neo4j-driver";
-
 import { getCognoDBDriver } from "../cognodb";
 
 import {
@@ -19,7 +17,9 @@ import {
 
 import type {
   CreateSkillInput,
+  RelatedSkill,
   Skill,
+  SkillWithRelatedSkills,
 } from "../../types/skill";
 
 // ============================================================
@@ -29,122 +29,250 @@ import type {
 function getStringValue(
   value: unknown
 ): string | undefined {
-  if (value === null || value === undefined) {
+  if (
+    value === null ||
+    value === undefined
+  ) {
     return undefined;
   }
 
   return String(value);
 }
 
-function mapSkillRecord(record: any): Skill {
-  return {
-    id: getStringValue(record.get("id")) ?? "",
-    name: getStringValue(record.get("name")) ?? "",
-    slug: getStringValue(record.get("slug")) ?? "",
-    category:
-      getStringValue(record.get("category")) ?? "",
-    description: getStringValue(
-      record.get("description")
-    ),
-  };
+// ============================================================
+// STRING ARRAY
+// ============================================================
+
+function getStringArray(
+  value: unknown
+): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter(
+      (item): item is string =>
+        typeof item === "string" &&
+        item.trim().length > 0
+    )
+    .map((item) => item.trim());
 }
 
-function mapSkillNode(node: Node): Skill {
+// ============================================================
+// MAP RELATED SKILL
+// ============================================================
+
+function mapRelatedSkill(
+  value: unknown
+): RelatedSkill | null {
+  if (
+    !value ||
+    typeof value !== "object"
+  ) {
+    return null;
+  }
+
+  const item =
+    value as Record<string, unknown>;
+
+  const id =
+    getStringValue(item.id);
+
+  const name =
+    getStringValue(item.name);
+
+  const slug =
+    getStringValue(item.slug);
+
+  const category =
+    getStringValue(item.category);
+
+  if (
+    !id ||
+    !name ||
+    !slug ||
+    !category
+  ) {
+    return null;
+  }
+
   return {
-    id: getStringValue(node.properties.id) ?? "",
-    name:
-      getStringValue(node.properties.name) ?? "",
-    slug:
-      getStringValue(node.properties.slug) ?? "",
-    category:
-      getStringValue(node.properties.category) ?? "",
-    description: getStringValue(
-      node.properties.description
-    ),
+    id,
+    name,
+    slug,
+    category,
+    description:
+      getStringValue(
+        item.description
+      ),
   };
 }
 
 // ============================================================
-// GET ALL SKILLS
+// MAP SKILL RECORD
 // ============================================================
 
-export async function getAllSkills(): Promise<Skill[]> {
-  const driver = getCognoDBDriver();
-  const session = driver.session();
-
-  try {
-    const result = await session.run(
-      GET_ALL_SKILLS
+function mapSkillRecord(
+  record: any
+): Skill {
+  const relatedRoleNames =
+    getStringArray(
+      record.get("relatedRoleNames")
     );
 
-    return result.records.map(mapSkillRecord);
+  return {
+    id:
+      getStringValue(
+        record.get("id")
+      ) ?? "",
+
+    name:
+      getStringValue(
+        record.get("name")
+      ) ?? "",
+
+    slug:
+      getStringValue(
+        record.get("slug")
+      ) ?? "",
+
+    category:
+      getStringValue(
+        record.get("category")
+      ) ?? "",
+
+    description:
+      getStringValue(
+        record.get("description")
+      ),
+
+    level:
+      getStringValue(
+        record.get("level")
+      ) as Skill["level"] | undefined,
+
+    proficiency:
+      getStringValue(
+        record.get("proficiency")
+      ),
+
+    relatedRoles:
+      relatedRoleNames,
+
+    relatedRoleNames:
+      relatedRoleNames,
+
+    relatedRoleCount:
+      relatedRoleNames.length,
+  };
+}
+
+// ============================================================
+// GET ALL
+// ============================================================
+
+export async function getAllSkills(): Promise<
+  Skill[]
+> {
+  const driver =
+    getCognoDBDriver();
+
+  const session =
+    driver.session();
+
+  try {
+    const result =
+      await session.run(
+        GET_ALL_SKILLS
+      );
+
+    return result.records.map(
+      mapSkillRecord
+    );
   } finally {
     await session.close();
   }
 }
 
 // ============================================================
-// GET SKILL BY ID
+// GET BY ID
 // ============================================================
 
 export async function getSkillById(
   id: string
 ): Promise<Skill | null> {
-  if (!id) {
+  if (!id?.trim()) {
     return null;
   }
 
-  const driver = getCognoDBDriver();
-  const session = driver.session();
+  const driver =
+    getCognoDBDriver();
+
+  const session =
+    driver.session();
 
   try {
-    const result = await session.run(
-      GET_SKILL_BY_ID,
-      { id }
-    );
+    const result =
+      await session.run(
+        GET_SKILL_BY_ID,
+        {
+          id: id.trim(),
+        }
+      );
 
     if (!result.records.length) {
       return null;
     }
 
-    return mapSkillRecord(result.records[0]);
+    return mapSkillRecord(
+      result.records[0]
+    );
   } finally {
     await session.close();
   }
 }
 
 // ============================================================
-// GET SKILL BY SLUG
+// GET BY SLUG
 // ============================================================
 
 export async function getSkillBySlug(
   slug: string
 ): Promise<Skill | null> {
-  if (!slug) {
+  if (!slug?.trim()) {
     return null;
   }
 
-  const driver = getCognoDBDriver();
-  const session = driver.session();
+  const driver =
+    getCognoDBDriver();
+
+  const session =
+    driver.session();
 
   try {
-    const result = await session.run(
-      GET_SKILL_BY_SLUG,
-      { slug }
-    );
+    const result =
+      await session.run(
+        GET_SKILL_BY_SLUG,
+        {
+          slug: slug.trim(),
+        }
+      );
 
     if (!result.records.length) {
       return null;
     }
 
-    return mapSkillRecord(result.records[0]);
+    return mapSkillRecord(
+      result.records[0]
+    );
   } finally {
     await session.close();
   }
 }
 
 // ============================================================
-// SEARCH SKILLS
+// SEARCH
 // ============================================================
 
 export async function searchSkills(
@@ -154,59 +282,87 @@ export async function searchSkills(
     return getAllSkills();
   }
 
-  const driver = getCognoDBDriver();
-  const session = driver.session();
+  const driver =
+    getCognoDBDriver();
+
+  const session =
+    driver.session();
 
   try {
-    const result = await session.run(
-      SEARCH_SKILLS,
-      {
-        search: search.trim(),
-      }
-    );
+    const result =
+      await session.run(
+        SEARCH_SKILLS,
+        {
+          search: search.trim(),
+        }
+      );
 
-    return result.records.map(mapSkillRecord);
+    return result.records.map(
+      mapSkillRecord
+    );
   } finally {
     await session.close();
   }
 }
 
 // ============================================================
-// CREATE SKILL
+// CREATE
 // ============================================================
 
 export async function createSkill(
   input: CreateSkillInput
 ): Promise<Skill> {
-  if (!input.name) {
-    throw new Error("Skill name is required");
+  if (!input.name?.trim()) {
+    throw new Error(
+      "Skill name is required"
+    );
   }
 
-  if (!input.slug) {
-    throw new Error("Skill slug is required");
+  if (!input.slug?.trim()) {
+    throw new Error(
+      "Skill slug is required"
+    );
   }
 
-  if (!input.category) {
-    throw new Error("Skill category is required");
+  if (!input.category?.trim()) {
+    throw new Error(
+      "Skill category is required"
+    );
   }
 
-  const driver = getCognoDBDriver();
-  const session = driver.session();
+  const driver =
+    getCognoDBDriver();
+
+  const session =
+    driver.session();
 
   try {
-    const id = crypto.randomUUID();
+    const id =
+      crypto.randomUUID();
 
-    const result = await session.run(
-      CREATE_SKILL,
-      {
-        id,
-        name: input.name,
-        slug: input.slug,
-        category: input.category,
-        description:
-          input.description ?? null,
-      }
-    );
+    const result =
+      await session.run(
+        CREATE_SKILL,
+        {
+          id,
+
+          name:
+            input.name.trim(),
+
+          slug:
+            input.slug.trim(),
+
+          category:
+            input.category.trim(),
+
+          description:
+            input.description?.trim() ||
+            null,
+
+          level:
+            input.level ?? null,
+        }
+      );
 
     if (!result.records.length) {
       throw new Error(
@@ -223,32 +379,65 @@ export async function createSkill(
 }
 
 // ============================================================
-// UPDATE SKILL
+// UPDATE
 // ============================================================
 
 export async function updateSkill(
   id: string,
   input: CreateSkillInput
 ): Promise<Skill | null> {
-  if (!id) {
+  if (!id?.trim()) {
     return null;
   }
 
-  const driver = getCognoDBDriver();
-  const session = driver.session();
+  if (!input.name?.trim()) {
+    throw new Error(
+      "Skill name is required"
+    );
+  }
+
+  if (!input.slug?.trim()) {
+    throw new Error(
+      "Skill slug is required"
+    );
+  }
+
+  if (!input.category?.trim()) {
+    throw new Error(
+      "Skill category is required"
+    );
+  }
+
+  const driver =
+    getCognoDBDriver();
+
+  const session =
+    driver.session();
 
   try {
-    const result = await session.run(
-      UPDATE_SKILL,
-      {
-        id,
-        name: input.name,
-        slug: input.slug,
-        category: input.category,
-        description:
-          input.description ?? null,
-      }
-    );
+    const result =
+      await session.run(
+        UPDATE_SKILL,
+        {
+          id: id.trim(),
+
+          name:
+            input.name.trim(),
+
+          slug:
+            input.slug.trim(),
+
+          category:
+            input.category.trim(),
+
+          description:
+            input.description?.trim() ||
+            null,
+
+          level:
+            input.level ?? null,
+        }
+      );
 
     if (!result.records.length) {
       return null;
@@ -263,27 +452,35 @@ export async function updateSkill(
 }
 
 // ============================================================
-// DELETE SKILL
+// DELETE
 // ============================================================
 
 export async function deleteSkill(
   id: string
 ): Promise<boolean> {
-  if (!id) {
+  if (!id?.trim()) {
     return false;
   }
 
-  const driver = getCognoDBDriver();
-  const session = driver.session();
+  const driver =
+    getCognoDBDriver();
+
+  const session =
+    driver.session();
 
   try {
-    const result = await session.run(
-      DELETE_SKILL,
-      { id }
-    );
+    const result =
+      await session.run(
+        DELETE_SKILL,
+        {
+          id: id.trim(),
+        }
+      );
 
     return (
-      result.summary.counters.updates()
+      result.summary
+        .counters
+        .updates()
         .nodesDeleted > 0
     );
   } finally {
@@ -292,55 +489,114 @@ export async function deleteSkill(
 }
 
 // ============================================================
-// GET SKILL WITH RELATED SKILLS
+// RELATED SKILLS
 // ============================================================
 
 export async function getSkillWithRelatedSkills(
   id: string
-) {
-  if (!id) {
+): Promise<
+  SkillWithRelatedSkills | null
+> {
+  if (!id?.trim()) {
     return null;
   }
 
-  const driver = getCognoDBDriver();
-  const session = driver.session();
+  const driver =
+    getCognoDBDriver();
+
+  const session =
+    driver.session();
 
   try {
-    const result = await session.run(
-      GET_SKILL_WITH_RELATED_SKILLS,
-      { id }
-    );
+    const result =
+      await session.run(
+        GET_SKILL_WITH_RELATED_SKILLS,
+        {
+          id: id.trim(),
+        }
+      );
 
     if (!result.records.length) {
       return null;
     }
 
-    const record = result.records[0];
+    const record =
+      result.records[0];
+
+    const relatedRoleNames =
+      getStringArray(
+        record.get(
+          "relatedRoleNames"
+        )
+      );
+
+    const rawRelatedSkills =
+      record.get(
+        "relatedSkills"
+      );
 
     const relatedSkills =
-      (record.get("relatedSkills") as Node[] | null) ??
-      [];
+      Array.isArray(
+        rawRelatedSkills
+      )
+        ? rawRelatedSkills
+            .map(mapRelatedSkill)
+            .filter(
+              (
+                item
+              ): item is RelatedSkill =>
+                item !== null
+            )
+        : [];
 
     return {
       id:
-        getStringValue(record.get("id")) ??
-        "",
+        getStringValue(
+          record.get("id")
+        ) ?? "",
+
       name:
-        getStringValue(record.get("name")) ??
-        "",
+        getStringValue(
+          record.get("name")
+        ) ?? "",
+
       slug:
-        getStringValue(record.get("slug")) ??
-        "",
+        getStringValue(
+          record.get("slug")
+        ) ?? "",
+
       category:
         getStringValue(
           record.get("category")
         ) ?? "",
-      description: getStringValue(
-        record.get("description")
-      ),
-      relatedSkills: relatedSkills
-        .filter(Boolean)
-        .map(mapSkillNode),
+
+      description:
+        getStringValue(
+          record.get("description")
+        ),
+
+      level:
+        getStringValue(
+          record.get("level")
+        ) as
+          | Skill["level"]
+          | undefined,
+
+      proficiency:
+        getStringValue(
+          record.get("proficiency")
+        ),
+
+      relatedRoles:
+        relatedRoleNames,
+
+      relatedRoleNames:
+        relatedRoleNames,
+
+      relatedRoleCount:
+        relatedRoleNames.length,
+
+      relatedSkills,
     };
   } finally {
     await session.close();

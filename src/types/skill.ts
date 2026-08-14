@@ -2,31 +2,23 @@
 // SKILL TYPES
 // ============================================================
 
-// ============================================================
-// SKILL CATEGORY
-// ============================================================
-
-export type SkillCategory =
-  | "Frontend"
-  | "Backend"
-  | "Database"
-  | "State Management"
-  | "Mobile"
-  | "DevOps"
-  | "Tools"
-  | "Cloud"
-  | "Testing"
-  | "AI/ML";
-
-// ============================================================
-// SKILL LEVEL
-// ============================================================
-
 export type SkillLevel =
   | "Beginner"
   | "Intermediate"
   | "Advanced"
   | "Expert";
+
+// ============================================================
+// RELATED SKILL
+// ============================================================
+
+export interface RelatedSkill {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  description?: string;
+}
 
 // ============================================================
 // SKILL
@@ -40,25 +32,34 @@ export interface Skill {
 
   description?: string;
 
-  /**
-   * Skill proficiency level used by SkillBadge / SkillCard.
-   */
   level?: SkillLevel;
 
-  /**
-   * Alternative API field if backend returns proficiency.
-   */
-  proficiency?: SkillLevel | string;
+  proficiency?: string;
 
   /**
-   * Number of career roles related to this skill.
+   * Actual role names connected through:
+   * (Skill)-[:REQUIRES]->(Role)
    */
-  relatedRoles?: number;
+  relatedRoles: string[];
 
   /**
-   * Related role names for SkillSummary.
+   * Same role names exposed for frontend compatibility.
    */
-  relatedRoleNames?: string[];
+  relatedRoleNames: string[];
+
+  /**
+   * Number of connected roles.
+   */
+  relatedRoleCount: number;
+}
+
+// ============================================================
+// SKILL WITH RELATED SKILLS
+// ============================================================
+
+export interface SkillWithRelatedSkills
+  extends Skill {
+  relatedSkills: RelatedSkill[];
 }
 
 // ============================================================
@@ -90,84 +91,10 @@ export interface UpdateSkillInput {
 // ============================================================
 
 export interface SkillQuery {
+  id?: string;
+  slug?: string;
   category?: string;
   search?: string;
   page?: number;
   limit?: number;
-}
-
-// ============================================================
-// SKILL SEARCH
-// ============================================================
-
-export interface SkillSearchQuery {
-  search: string;
-  category?: string;
-  limit?: number;
-}
-
-// ============================================================
-// RELATED SKILL
-// ============================================================
-
-export interface RelatedSkill {
-  id: string;
-  name: string;
-  slug: string;
-  category: string;
-  description?: string;
-
-  relationship?: string;
-  distance?: number;
-}
-
-// ============================================================
-// SKILL WITH RELATED SKILLS
-// ============================================================
-
-export interface SkillWithRelatedSkills extends Skill {
-  relatedSkills: RelatedSkill[];
-}
-
-// ============================================================
-// SKILL SUMMARY
-// ============================================================
-
-export interface SkillSummary {
-  id: string;
-  name: string;
-  slug: string;
-  category: string;
-
-  description?: string;
-  level?: SkillLevel;
-  proficiency?: SkillLevel | string;
-  relatedRoles?: number;
-  relatedRoleNames?: string[];
-}
-
-// ============================================================
-// SKILL LIST RESPONSE
-// ============================================================
-
-export interface SkillListResponse {
-  skills: Skill[];
-  count: number;
-}
-
-// ============================================================
-// SKILL DETAIL RESPONSE
-// ============================================================
-
-export interface SkillDetailResponse {
-  skill: Skill;
-}
-
-// ============================================================
-// RELATED SKILLS RESPONSE
-// ============================================================
-
-export interface RelatedSkillsResponse {
-  skill: Skill;
-  relatedSkills: RelatedSkill[];
 }

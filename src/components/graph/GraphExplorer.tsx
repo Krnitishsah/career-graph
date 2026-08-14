@@ -17,31 +17,42 @@ export default function GraphExplorer() {
     error,
   } = useCareerGraph();
 
-  const [selectedSkills, setSelectedSkills] = useState<
-    CareerSkill[]
-  >([]);
+  // ============================================================
+  // STATE
+  // ============================================================
 
-  const [nodeType, setNodeType] = useState("");
-  const [relationship, setRelationship] = useState("");
-  const [limit, setLimit] = useState(25);
+  const [selectedSkills, setSelectedSkills] =
+    useState<CareerSkill[]>([]);
 
-  const [graph, setGraph] = useState<CareerGraph | null>(
-    null,
-  );
+  const [nodeType, setNodeType] =
+    useState<string>("");
 
-  const [graphLoading, setGraphLoading] = useState(false);
+  const [relationship, setRelationship] =
+    useState<string>("");
+
+  const [limit, setLimit] =
+    useState<number>(25);
+
+  const [graph, setGraph] =
+    useState<CareerGraph | null>(null);
+
+  const [graphLoading, setGraphLoading] =
+    useState(false);
 
   // ============================================================
   // ADD SKILL
   // ============================================================
 
-  const handleAddSkill = (skill: CareerSkill) => {
+  const handleAddSkill = (
+    skill: CareerSkill,
+  ) => {
     setSelectedSkills((previous) => {
-      if (
+      const alreadySelected =
         previous.some(
           (item) => item.id === skill.id,
-        )
-      ) {
+        );
+
+      if (alreadySelected) {
         return previous;
       }
 
@@ -53,7 +64,9 @@ export default function GraphExplorer() {
   // REMOVE SKILL
   // ============================================================
 
-  const handleRemoveSkill = (skillId: string) => {
+  const handleRemoveSkill = (
+    skillId: string,
+  ) => {
     setSelectedSkills((previous) =>
       previous.filter(
         (skill) => skill.id !== skillId,
@@ -68,27 +81,30 @@ export default function GraphExplorer() {
   const handleApply = async (
     skillsToExplore: CareerSkill[],
   ) => {
-    if (!skillsToExplore.length) {
+    if (skillsToExplore.length === 0) {
       return;
     }
 
     const slugs = skillsToExplore
-      .map((skill) => skill.slug)
+      .map((skill) => skill.slug?.trim())
       .filter(
         (slug): slug is string =>
           Boolean(slug),
       );
 
-    if (!slugs.length) {
+    if (slugs.length === 0) {
       return;
     }
 
     setGraphLoading(true);
 
     try {
-      const result = await getCareerGraph(slugs);
+      const result =
+        await getCareerGraph(slugs);
 
       setGraph(result);
+    } catch {
+      setGraph(null);
     } finally {
       setGraphLoading(false);
     }
@@ -110,78 +126,98 @@ export default function GraphExplorer() {
   // FILTER GRAPH
   // ============================================================
 
-  const filteredGraph = useMemo(() => {
-    if (!graph) {
-      return null;
-    }
+  const filteredGraph =
+    useMemo<CareerGraph | null>(() => {
+      if (!graph) {
+        return null;
+      }
 
-    const skillNodes = graph.nodes.filter(
-      (node) => node.label === "Skill",
-    );
+      const skillNodes = graph.nodes.filter(
+        (node) =>
+          node.label === "Skill",
+      );
 
-    const allRoleNodes = graph.nodes.filter(
-      (node) => node.label === "Role",
-    );
+      const allRoleNodes =
+        graph.nodes.filter(
+          (node) =>
+            node.label === "Role",
+        );
 
-    // Role limit applies ONLY to roles
-    const roleNodes = allRoleNodes.slice(
-      0,
-      limit,
-    );
+      // --------------------------------------------------------
+      // ROLE LIMIT
+      // --------------------------------------------------------
 
-    let nodes = [
-      ...skillNodes,
-      ...roleNodes,
-    ];
+      const roleNodes =
+        allRoleNodes.slice(0, limit);
 
-    // Node type
-    if (nodeType === "skill") {
-      nodes = skillNodes;
-    }
+      // --------------------------------------------------------
+      // NODE TYPE
+      // --------------------------------------------------------
 
-    if (nodeType === "role") {
-      nodes = roleNodes;
-    }
+      let nodes = [
+        ...skillNodes,
+        ...roleNodes,
+      ];
 
-    // Relationship filter
-    let relationships = [
-      ...graph.relationships,
-    ];
+      if (nodeType === "skill") {
+        nodes = skillNodes;
+      } else if (nodeType === "role") {
+        nodes = roleNodes;
+      }
 
-    if (relationship) {
+      // --------------------------------------------------------
+      // RELATIONSHIP
+      // --------------------------------------------------------
+
+      let relationships =
+        graph.relationships;
+
+      if (relationship) {
+        relationships =
+          relationships.filter(
+            (relation) =>
+              relation.type ===
+              relationship,
+          );
+      }
+
+      // --------------------------------------------------------
+      // VISIBLE NODE IDS
+      // --------------------------------------------------------
+
+      const visibleNodeIds =
+        new Set(
+          nodes.map(
+            (node) => node.id,
+          ),
+        );
+
+      // --------------------------------------------------------
+      // ONLY KEEP VALID CONNECTIONS
+      // --------------------------------------------------------
+
       relationships =
         relationships.filter(
           (relation) =>
-            relation.type === relationship,
+            visibleNodeIds.has(
+              relation.source,
+            ) &&
+            visibleNodeIds.has(
+              relation.target,
+            ),
         );
-    }
 
-    // Keep only relationships between visible nodes
-    const visibleNodeIds = new Set(
-      nodes.map((node) => node.id),
-    );
-
-    relationships =
-      relationships.filter(
-        (relation) =>
-          visibleNodeIds.has(
-            relation.source,
-          ) &&
-          visibleNodeIds.has(
-            relation.target,
-          ),
-      );
-
-    return {
-      nodes,
-      relationships,
-    };
-  }, [
-    graph,
-    nodeType,
-    relationship,
-    limit,
-  ]);
+      return {
+        ...graph,
+        nodes,
+        relationships,
+      };
+    }, [
+      graph,
+      nodeType,
+      relationship,
+      limit,
+    ]);
 
   // ============================================================
   // ROLE NODES
@@ -193,7 +229,8 @@ export default function GraphExplorer() {
     }
 
     return filteredGraph.nodes.filter(
-      (node) => node.label === "Role",
+      (node) =>
+        node.label === "Role",
     );
   }, [filteredGraph]);
 
@@ -213,9 +250,9 @@ export default function GraphExplorer() {
         </h1>
 
         <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Explore relationships between technical
-          skills and career roles using the career
-          graph.
+          Explore relationships between
+          technical skills and career
+          roles using the career graph.
         </p>
       </div>
 
@@ -250,13 +287,20 @@ export default function GraphExplorer() {
         limit={limit}
         onAddSkill={handleAddSkill}
         onApply={handleApply}
-        onRemoveSkill={handleRemoveSkill}
-        onNodeTypeChange={setNodeType}
-        onRelationshipChange={setRelationship}
+        onRemoveSkill={
+          handleRemoveSkill
+        }
+        onNodeTypeChange={
+          setNodeType
+        }
+        onRelationshipChange={
+          setRelationship
+        }
         onLimitChange={setLimit}
         onReset={handleReset}
         disabled={
-          loading || graphLoading
+          loading ||
+          graphLoading
         }
       />
 
@@ -270,11 +314,11 @@ export default function GraphExplorer() {
       />
 
       {/* ======================================================
-          SUMMARY
+          ROLE SUMMARY
       ====================================================== */}
 
       {filteredGraph && (
-        <div
+        <section
           className="
             rounded-xl
             border border-border
@@ -285,23 +329,25 @@ export default function GraphExplorer() {
         >
           {/* Summary Header */}
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-base font-semibold text-foreground">
                 Career Roles
               </h2>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Roles connected to your selected
-                skills.
+                Roles connected to your
+                selected skills.
               </p>
             </div>
 
             <span
               className="
+                shrink-0
                 rounded-md
                 bg-secondary
-                px-2.5 py-1
+                px-2.5
+                py-1
                 text-xs
                 font-medium
                 text-secondary-foreground
@@ -326,179 +372,204 @@ export default function GraphExplorer() {
                 lg:grid-cols-3
               "
             >
-              {roleNodes.map((role) => {
-                const properties =
-                  role.properties;
+              {roleNodes.map(
+                (role) => {
+                  const properties =
+                    role.properties;
 
-                const name = String(
-                  properties.name ??
-                    "Unknown Role",
-                );
+                  const name =
+                    String(
+                      properties.name ??
+                        "Unknown Role",
+                    );
 
-                const category =
-                  properties.category
-                    ? String(
-                        properties.category,
-                      )
-                    : "";
+                  const category =
+                    properties.category
+                      ? String(
+                          properties.category,
+                        )
+                      : "";
 
-                const level =
-                  properties.level
-                    ? String(
-                        properties.level,
-                      )
-                    : "";
+                  const level =
+                    properties.level
+                      ? String(
+                          properties.level,
+                        )
+                      : "";
 
-                const description =
-                  properties.description
-                    ? String(
-                        properties.description,
-                      )
-                    : "";
+                  const description =
+                    properties.description
+                      ? String(
+                          properties.description,
+                        )
+                      : "";
 
-                const salaryRange =
-                  properties.salaryRange
-                    ? String(
-                        properties.salaryRange,
-                      )
-                    : "";
+                  const salaryRange =
+                    properties.salaryRange
+                      ? String(
+                          properties.salaryRange,
+                        )
+                      : "";
 
-                const matchScore =
-                  properties.matchScore !==
-                    undefined &&
-                  properties.matchScore !==
-                    null
-                    ? Number(
-                        properties.matchScore,
-                      )
-                    : null;
+                  const rawMatchScore =
+                    properties.matchScore;
 
-                return (
-                  <article
-                    key={role.id}
-                    className="
-                      rounded-lg
-                      border border-border
-                      bg-background
-                      p-4
-                    "
-                  >
-                    {/* Name + Match */}
+                  const matchScore =
+                    rawMatchScore !==
+                      undefined &&
+                    rawMatchScore !==
+                      null
+                      ? Number(
+                          rawMatchScore,
+                        )
+                      : null;
 
-                    <div className="flex items-start justify-between gap-3">
-                      <h3
-                        title={name}
-                        className="
-                          min-w-0
-                          truncate
-                          text-sm
-                          font-semibold
-                          text-foreground
-                        "
-                      >
-                        {name}
-                      </h3>
-
-                      {matchScore !== null &&
-                        Number.isFinite(
-                          matchScore,
-                        ) && (
-                          <span
-                            className="
-                              shrink-0
-                              rounded-md
-                              bg-primary/10
-                              px-2 py-1
-                              text-xs
-                              font-semibold
-                              text-primary
-                            "
-                          >
-                            {Math.round(
-                              matchScore,
-                            )}
-                            %
-                          </span>
-                        )}
-                    </div>
-
-                    {/* Category + Level */}
-
-                    {(category ||
-                      level) && (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {category}
-
-                        {category &&
-                          level &&
-                          " • "}
-
-                        {level}
-                      </p>
-                    )}
-
-                    {/* Role */}
-
-                    <span
+                  return (
+                    <article
+                      key={role.id}
                       className="
-                        mt-3
-                        inline-flex
-                        rounded-md
-                        bg-secondary
-                        px-2 py-1
-                        text-[11px]
-                        font-medium
-                        text-secondary-foreground
+                        rounded-lg
+                        border border-border
+                        bg-background
+                        p-4
+                        transition-colors
+                        hover:border-primary/30
                       "
                     >
-                      Career Role
-                    </span>
+                      {/* Name + Match */}
 
-                    {/* Salary */}
+                      <div className="flex items-start justify-between gap-3">
+                        <h3
+                          title={name}
+                          className="
+                            min-w-0
+                            truncate
+                            text-sm
+                            font-semibold
+                            text-foreground
+                          "
+                        >
+                          {name}
+                        </h3>
 
-                    {salaryRange && (
-                      <p className="mt-3 text-sm font-semibold text-primary">
-                        {salaryRange}
-                      </p>
-                    )}
+                        {matchScore !==
+                          null &&
+                          Number.isFinite(
+                            matchScore,
+                          ) && (
+                            <span
+                              className="
+                                shrink-0
+                                rounded-md
+                                bg-primary/10
+                                px-2
+                                py-1
+                                text-xs
+                                font-semibold
+                                text-primary
+                              "
+                            >
+                              {Math.round(
+                                matchScore,
+                              )}
+                              %
+                            </span>
+                          )}
+                      </div>
 
-                    {/* Description */}
+                      {/* Category + Level */}
 
-                    {description && (
-                      <p
+                      {(category ||
+                        level) && (
+                        <p
+                          className="
+                            mt-1
+                            text-xs
+                            text-muted-foreground
+                          "
+                        >
+                          {category}
+
+                          {category &&
+                            level &&
+                            " • "}
+
+                          {level}
+                        </p>
+                      )}
+
+                      {/* Role Badge */}
+
+                      <span
                         className="
                           mt-3
-                          line-clamp-2
-                          text-sm
-                          leading-5
-                          text-muted-foreground
+                          inline-flex
+                          rounded-md
+                          bg-secondary
+                          px-2
+                          py-1
+                          text-[11px]
+                          font-medium
+                          text-secondary-foreground
                         "
                       >
-                        {description}
-                      </p>
-                    )}
-                  </article>
-                );
-              })}
+                        Career Role
+                      </span>
+
+                      {/* Salary */}
+
+                      {salaryRange && (
+                        <p
+                          className="
+                            mt-3
+                            text-sm
+                            font-semibold
+                            text-primary
+                          "
+                        >
+                          {salaryRange}
+                        </p>
+                      )}
+
+                      {/* Description */}
+
+                      {description && (
+                        <p
+                          className="
+                            mt-3
+                            line-clamp-2
+                            text-sm
+                            leading-5
+                            text-muted-foreground
+                          "
+                        >
+                          {description}
+                        </p>
+                      )}
+                    </article>
+                  );
+                },
+              )}
             </div>
           ) : (
             <div
               className="
                 mt-5
                 rounded-lg
-                border border-dashed
+                border
+                border-dashed
                 border-border
                 p-6
                 text-center
               "
             >
               <p className="text-sm text-muted-foreground">
-                No career roles found in the
-                current graph.
+                No career roles found
+                in the current graph.
               </p>
             </div>
           )}
-        </div>
+        </section>
       )}
     </section>
   );

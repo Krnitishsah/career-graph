@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 
 import SkillList from "./SkillList";
@@ -11,6 +12,8 @@ import useSkills from "../../hooks/useSkills";
 import type { Skill } from "../../types/skill";
 
 export default function SkillsExplorer() {
+  const router = useRouter();
+
   const {
     skills = [],
     loading,
@@ -32,8 +35,9 @@ export default function SkillsExplorer() {
         skills
           .map((skill) => skill.category)
           .filter(
-            (category): category is string =>
-              Boolean(category),
+            (item): item is string =>
+              typeof item === "string" &&
+              item.trim().length > 0,
           ),
       ),
     ).sort((a, b) => a.localeCompare(b));
@@ -46,32 +50,44 @@ export default function SkillsExplorer() {
   const filteredSkills = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    if (!query && !category) {
-      return skills;
-    }
-
     return skills.filter((skill) => {
-      const searchableValues = [
-        skill.name,
-        skill.category,
-        skill.description,
-        skill.level,
-        skill.proficiency,
-        ...(skill.relatedRoles ?? []),
+      const matchesCategory =
+        !category ||
+        skill.category?.toLowerCase() ===
+          category.toLowerCase();
+
+      if (!matchesCategory) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      const roleNames = [
+        ...(Array.isArray(skill.relatedRoles)
+          ? skill.relatedRoles
+          : []),
+        ...(Array.isArray(skill.relatedRoleNames)
+          ? skill.relatedRoleNames
+          : []),
       ];
 
-      const matchesSearch =
-        !query ||
-        searchableValues
-          .filter(Boolean)
-          .some((value) =>
-            value!.toLowerCase().includes(query),
-          );
+      const searchableValues = [
+        skill.name ?? "",
+        skill.slug ?? "",
+        skill.category ?? "",
+        skill.description ?? "",
+        skill.level ?? "",
+        skill.proficiency ?? "",
+        ...roleNames,
+      ];
 
-      const matchesCategory =
-        !category || skill.category === category;
-
-      return matchesSearch && matchesCategory;
+      return searchableValues.some(
+        (value) =>
+          typeof value === "string" &&
+          value.toLowerCase().includes(query),
+      );
     });
   }, [skills, search, category]);
 
@@ -80,7 +96,8 @@ export default function SkillsExplorer() {
   // ============================================================
 
   const hasFilters =
-    Boolean(search.trim()) || Boolean(category);
+    search.trim().length > 0 ||
+    category.trim().length > 0;
 
   const handleReset = () => {
     setSearch("");
@@ -104,7 +121,7 @@ export default function SkillsExplorer() {
   };
 
   // ============================================================
-  // ESCAPE KEY + BODY SCROLL LOCK
+  // ESCAPE + BODY SCROLL
   // ============================================================
 
   useEffect(() => {
@@ -114,18 +131,28 @@ export default function SkillsExplorer() {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setSelectedSkill(null);
+        handleCloseModal();
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
+    const originalOverflow =
+      document.body.style.overflow;
 
-    const originalOverflow = document.body.style.overflow;
+    document.addEventListener(
+      "keydown",
+      handleKeyDown,
+    );
+
     document.body.style.overflow = "hidden";
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = originalOverflow;
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown,
+      );
+
+      document.body.style.overflow =
+        originalOverflow;
     };
   }, [selectedSkill]);
 
@@ -134,11 +161,25 @@ export default function SkillsExplorer() {
   // ============================================================
 
   const handleExplore = (skill: Skill) => {
-    console.log("Explore skill:", skill);
+    const skillIdentifier =
+      skill.slug || skill.id;
 
-    // Later:
-    // router.push(`/skills/${skill.slug}`);
+    if (!skillIdentifier) {
+      return;
+    }
+
+    setSelectedSkill(null);
+
+    router.push(
+      `/explore?skill=${encodeURIComponent(
+        skillIdentifier,
+      )}`,
+    );
   };
+
+  // ============================================================
+  // RETURN
+  // ============================================================
 
   return (
     <section className="space-y-8">
@@ -146,21 +187,57 @@ export default function SkillsExplorer() {
           HEADER
       ======================================================== */}
 
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <header
+        className="
+          flex
+          flex-col
+          gap-4
+          sm:flex-row
+          sm:items-end
+          sm:justify-between
+        "
+      >
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+          <h1
+            className="
+              text-2xl
+              font-bold
+              tracking-tight
+              text-foreground
+              sm:text-3xl
+            "
+          >
             Explore Skills
           </h1>
 
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-            Discover technical skills, proficiency levels,
-            categories, and career opportunities connected to
-            each skill.
+          <p
+            className="
+              mt-2
+              max-w-2xl
+              text-sm
+              leading-6
+              text-muted-foreground
+              sm:text-base
+            "
+          >
+            Discover technical skills, proficiency
+            levels, categories, and career
+            opportunities connected to each skill.
           </p>
         </div>
 
         {!loading && !error && (
-          <div className="shrink-0 rounded-lg border border-border bg-card px-3 py-2">
+          <div
+            className="
+              shrink-0
+              rounded-lg
+              border
+              border-border
+              bg-card
+              px-3
+              py-2
+            "
+          >
             <span className="text-sm font-semibold text-foreground">
               {filteredSkills.length}
             </span>{" "}
@@ -174,17 +251,40 @@ export default function SkillsExplorer() {
       </header>
 
       {/* ========================================================
-          SEARCH & FILTERS
+          SEARCH + FILTER
       ======================================================== */}
 
-      <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-          {/* Search */}
+      <div
+        className="
+          rounded-xl
+          border
+          border-border
+          bg-card
+          p-4
+          shadow-sm
+        "
+      >
+        <div
+          className="
+            flex
+            flex-col
+            gap-4
+            lg:flex-row
+            lg:items-end
+          "
+        >
+          {/* SEARCH */}
 
           <div className="w-full lg:max-w-xl">
             <label
               htmlFor="skill-search"
-              className="mb-2 block text-sm font-medium text-foreground"
+              className="
+                mb-2
+                block
+                text-sm
+                font-medium
+                text-foreground
+              "
             >
               Search skills
             </label>
@@ -197,12 +297,18 @@ export default function SkillsExplorer() {
             />
           </div>
 
-          {/* Category */}
+          {/* CATEGORY */}
 
           <div className="w-full sm:w-auto">
             <label
               htmlFor="skill-category"
-              className="mb-2 block text-sm font-medium text-foreground"
+              className="
+                mb-2
+                block
+                text-sm
+                font-medium
+                text-foreground
+              "
             >
               Category
             </label>
@@ -215,10 +321,10 @@ export default function SkillsExplorer() {
               }
               disabled={loading}
               className="
-                h-10
+                h-11
                 w-full
                 min-w-52
-                rounded-lg
+                rounded-xl
                 border
                 border-border
                 bg-background
@@ -235,17 +341,22 @@ export default function SkillsExplorer() {
                 disabled:opacity-60
               "
             >
-              <option value="">All categories</option>
+              <option value="">
+                All categories
+              </option>
 
               {categories.map((item) => (
-                <option key={item} value={item}>
+                <option
+                  key={item}
+                  value={item}
+                >
                   {item}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Reset */}
+          {/* RESET */}
 
           {hasFilters && (
             <button
@@ -253,9 +364,9 @@ export default function SkillsExplorer() {
               onClick={handleReset}
               disabled={loading}
               className="
-                h-10
+                h-11
                 shrink-0
-                rounded-lg
+                rounded-xl
                 border
                 border-border
                 bg-background
@@ -278,10 +389,17 @@ export default function SkillsExplorer() {
           )}
         </div>
 
-        {/* Active filters */}
+        {/* FILTER SUMMARY */}
 
         {hasFilters && (
-          <div className="mt-4 border-t border-border pt-3">
+          <div
+            className="
+              mt-4
+              border-t
+              border-border
+              pt-3
+            "
+          >
             <p className="text-xs text-muted-foreground">
               Showing{" "}
               <span className="font-medium text-foreground">
@@ -326,14 +444,18 @@ export default function SkillsExplorer() {
         <div className="mb-4">
           <h2
             id="available-skills-heading"
-            className="text-lg font-semibold text-foreground"
+            className="
+              text-lg
+              font-semibold
+              text-foreground
+            "
           >
             Available Skills
           </h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Select a skill to view its details and related
-            career roles.
+            Select a skill to view its details and
+            related career roles.
           </p>
         </div>
 
@@ -341,11 +463,9 @@ export default function SkillsExplorer() {
           skills={filteredSkills}
           loading={loading}
           emptyMessage={
-            search.trim()
-              ? `No skills found for "${search}".`
-              : category
-                ? `No skills found in "${category}".`
-                : "No skills available."
+            hasFilters
+              ? "No skills match your current filters."
+              : "No skills available."
           }
           onSkillClick={handleSkillClick}
         />
@@ -372,12 +492,15 @@ export default function SkillsExplorer() {
           aria-modal="true"
           aria-labelledby="skill-modal-title"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
               handleCloseModal();
             }
           }}
         >
-          <div
+          <article
             className="
               relative
               flex
@@ -389,46 +512,56 @@ export default function SkillsExplorer() {
               rounded-2xl
               border
               border-border
-              bg-background
+              bg-card
               shadow-2xl
             "
             onMouseDown={(event) => {
               event.stopPropagation();
             }}
           >
-            {/* ==================================================
-                MODAL HEADER
-            ================================================== */}
+            {/* MODAL HEADER */}
 
-            <div
+            <header
               className="
                 flex
                 shrink-0
                 items-center
                 justify-between
+                gap-4
                 border-b
                 border-border
-                bg-card
                 px-5
                 py-4
                 sm:px-6
               "
             >
-              <div className="min-w-0 pr-3">
+              <div className="min-w-0">
                 <h2
                   id="skill-modal-title"
-                  className="truncate text-lg font-semibold text-foreground"
+                  className="
+                    truncate
+                    text-lg
+                    font-semibold
+                    text-foreground
+                  "
                 >
                   {selectedSkill.name}
                 </h2>
 
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {selectedSkill.category ||
-                    "Skill Details"}
-                </p>
+                {selectedSkill.category && (
+                  <p
+                    className="
+                      mt-0.5
+                      text-xs
+                      text-muted-foreground
+                    "
+                  >
+                    {selectedSkill.category}
+                  </p>
+                )}
               </div>
 
-              {/* X CLOSE BUTTON */}
+              {/* ONLY CLOSE BUTTON */}
 
               <button
                 type="button"
@@ -457,23 +590,26 @@ export default function SkillsExplorer() {
               >
                 <X
                   className="h-4 w-4"
-                  strokeWidth={2}
                   aria-hidden="true"
                 />
               </button>
-            </div>
+            </header>
 
-            {/* ==================================================
-                MODAL CONTENT
-            ================================================== */}
+            {/* MODAL CONTENT */}
 
-            <div className="overflow-y-auto p-4 sm:p-6">
+            <div
+              className="
+                overflow-y-auto
+                p-4
+                sm:p-6
+              "
+            >
               <SkillSummary
                 skill={selectedSkill}
                 onExplore={handleExplore}
               />
             </div>
-          </div>
+          </article>
         </div>
       )}
     </section>

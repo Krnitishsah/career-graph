@@ -1,48 +1,69 @@
+import type { KeyboardEvent } from "react";
+
 import SkillBadge from "./SkillBadge";
-import type { SkillLevel } from "@/src/types/skill";
+import type { Skill } from "../../types/skill";
 
 interface SkillCardProps {
-  name: string;
-  category?: string;
-  level?: SkillLevel;
-  description?: string;
-  relatedRoles?: number | string[];
-  onClick?: () => void;
+  skill: Skill;
+  onClick?: (skill: Skill) => void;
 }
 
 export default function SkillCard({
-  name,
-  category,
-  level,
-  description,
-  relatedRoles,
+  skill,
   onClick,
 }: SkillCardProps) {
   const isClickable = typeof onClick === "function";
 
-  const relatedRoleCount = Array.isArray(relatedRoles)
-    ? relatedRoles.length
-    : relatedRoles;
+  const relatedRoleNames = Array.isArray(
+    skill.relatedRoleNames,
+  )
+    ? skill.relatedRoleNames
+    : Array.isArray(skill.relatedRoles)
+      ? skill.relatedRoles
+      : [];
+
+  const roleCount =
+    typeof skill.relatedRoleCount === "number"
+      ? skill.relatedRoleCount
+      : relatedRoleNames.length;
+
+  const skillLevel =
+    skill.proficiency ?? skill.level;
 
   const handleKeyDown = (
-    event: React.KeyboardEvent<HTMLElement>
+    event: KeyboardEvent<HTMLElement>,
   ) => {
-    if (!isClickable || !onClick) return;
+    if (!isClickable || !onClick) {
+      return;
+    }
 
-    if (event.key === "Enter" || event.key === " ") {
+    if (
+      event.key === "Enter" ||
+      event.key === " "
+    ) {
       event.preventDefault();
-      onClick();
+      onClick(skill);
+    }
+  };
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick(skill);
     }
   };
 
   return (
     <article
-      onClick={isClickable ? onClick : undefined}
-      onKeyDown={isClickable ? handleKeyDown : undefined}
+      onClick={isClickable ? handleClick : undefined}
+      onKeyDown={
+        isClickable ? handleKeyDown : undefined
+      }
       tabIndex={isClickable ? 0 : undefined}
       role={isClickable ? "button" : undefined}
       aria-label={
-        isClickable ? `View ${name} skill` : undefined
+        isClickable
+          ? `View ${skill.name} skill`
+          : undefined
       }
       className={`
         group flex h-full flex-col
@@ -64,40 +85,40 @@ export default function SkillCard({
         }
       `}
     >
-      {/* Header */}
+      {/* HEADER */}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <h3
-            title={name}
+            title={skill.name}
             className="
               truncate
               text-base font-semibold
               text-card-foreground
             "
           >
-            {name}
+            {skill.name}
           </h3>
 
-          {category && (
+          {skill.category && (
             <p
-              title={category}
+              title={skill.category}
               className="
                 mt-1 truncate
                 text-xs text-muted-foreground
               "
             >
-              {category}
+              {skill.category}
             </p>
           )}
         </div>
 
-        {level && (
-          <SkillBadge level={level} />
+        {skillLevel && (
+          <SkillBadge level={skillLevel} />
         )}
       </div>
 
-      {/* Description */}
-      {description && (
+      {/* DESCRIPTION */}
+      {skill.description && (
         <p
           className="
             mt-4 line-clamp-2
@@ -105,37 +126,35 @@ export default function SkillCard({
             text-muted-foreground
           "
         >
-          {description}
+          {skill.description}
         </p>
       )}
 
-      {/* Footer */}
-      {relatedRoleCount !== undefined && (
-        <div
+      {/* FOOTER */}
+      <div
+        className="
+          mt-auto flex items-center
+          justify-between
+          border-t border-border
+          pt-4
+        "
+      >
+        <span className="text-xs text-muted-foreground">
+          Related roles
+        </span>
+
+        <span
           className="
-            mt-auto flex items-center
-            justify-between
-            border-t border-border
-            pt-4
+            rounded-md
+            bg-secondary
+            px-2 py-1
+            text-xs font-medium
+            text-secondary-foreground
           "
         >
-          <span className="text-xs text-muted-foreground">
-            Related roles
-          </span>
-
-          <span
-            className="
-              rounded-md
-              bg-secondary
-              px-2 py-1
-              text-xs font-medium
-              text-secondary-foreground
-            "
-          >
-            {relatedRoleCount}
-          </span>
-        </div>
-      )}
+          {roleCount}
+        </span>
+      </div>
     </article>
   );
 }

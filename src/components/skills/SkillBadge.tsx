@@ -6,22 +6,24 @@ interface SkillBadgeProps {
 }
 
 const levelStyles: Record<SkillLevel, string> = {
-  Beginner: "border-slate-200 bg-slate-100 text-slate-700",
+  Beginner:
+    "border-slate-200 bg-slate-100 text-slate-700",
 
-  Intermediate: "border-blue-200 bg-blue-50 text-blue-700",
+  Intermediate:
+    "border-blue-200 bg-blue-50 text-blue-700",
 
-  Advanced: "border-violet-200 bg-violet-50 text-violet-700",
+  Advanced:
+    "border-violet-200 bg-violet-50 text-violet-700",
 
-  Expert: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  Expert:
+    "border-emerald-200 bg-emerald-50 text-emerald-700",
 };
 
 export default function SkillBadge({
   level,
   className = "",
 }: SkillBadgeProps) {
-  if (!level) {
-    return null;
-  }
+  if (!level) return null;
 
   return (
     <span
@@ -31,7 +33,6 @@ export default function SkillBadge({
         rounded-full border
         px-3 py-1.5
         text-xs font-medium
-        transition-colors
         ${levelStyles[level]}
         ${className}
       `}

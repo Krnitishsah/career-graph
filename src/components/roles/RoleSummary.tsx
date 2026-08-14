@@ -8,13 +8,13 @@ import {
   X,
 } from "lucide-react";
 
-import type { CareerRole } from "@/src/types/role";
+import type { RoleDetail } from "../../types/role";
 
 interface RoleSummaryProps {
-  role?: CareerRole | null;
+  role?: RoleDetail | null;
   loading?: boolean;
   error?: string | null;
-  onExplore?: (role: CareerRole) => void;
+  onExplore?: (role: RoleDetail) => void;
   onClose?: () => void;
 }
 
@@ -29,16 +29,17 @@ export default function RoleSummary({
     return null;
   }
 
-  const matchScore =
-    typeof role?.matchScore === "number"
-      ? Math.min(Math.max(role.matchScore, 0), 100)
-      : null;
+  const skills = Array.isArray(role?.skills)
+    ? role.skills
+    : [];
 
-  const hasSkills =
-    Array.isArray(role?.skills) && role.skills.length > 0;
+  const relatedRoles = Array.isArray(
+    role?.relatedRoles,
+  )
+    ? role.relatedRoles
+    : [];
 
-  const hasRelatedSkills =
-    typeof role?.relatedSkills === "number";
+  const skillCount = skills.length;
 
   return (
     <div
@@ -60,48 +61,39 @@ export default function RoleSummary({
     >
       <article
         className="
-          relative
-          flex
+          relative flex
           max-h-[90vh]
-          w-full
-          max-w-2xl
+          w-full max-w-2xl
           flex-col
           overflow-hidden
           rounded-2xl
-          border
-          border-border
+          border border-border
           bg-card
           shadow-2xl
         "
-        onMouseDown={(event) => event.stopPropagation()}
+        onMouseDown={(event) => {
+          event.stopPropagation();
+        }}
       >
         {/* =====================================================
-            HEADER / CLOSE
+            HEADER
         ====================================================== */}
 
         <header
           className="
-            flex
-            shrink-0
-            items-start
-            justify-between
+            flex shrink-0
+            items-start justify-between
             gap-4
-            border-b
-            border-border
-            px-6
-            py-5
+            border-b border-border
+            px-6 py-5
             sm:px-7
           "
         >
           <div className="flex min-w-0 items-center gap-3 pr-10">
             <div
               className="
-                flex
-                h-11
-                w-11
-                shrink-0
-                items-center
-                justify-center
+                flex h-11 w-11 shrink-0
+                items-center justify-center
                 rounded-xl
                 bg-primary/10
               "
@@ -117,8 +109,7 @@ export default function RoleSummary({
                 id="role-summary-title"
                 className="
                   truncate
-                  text-lg
-                  font-semibold
+                  text-lg font-semibold
                   tracking-tight
                   text-foreground
                   sm:text-xl
@@ -128,7 +119,7 @@ export default function RoleSummary({
                   ? "Loading role..."
                   : error
                     ? "Career Role"
-                    : role?.name}
+                    : role?.name ?? "Career Role"}
               </h2>
 
               {!loading && !error && role && (
@@ -138,10 +129,8 @@ export default function RoleSummary({
                       className="
                         rounded-md
                         bg-muted
-                        px-2.5
-                        py-1
-                        text-xs
-                        font-medium
+                        px-2.5 py-1
+                        text-xs font-medium
                         text-muted-foreground
                       "
                     >
@@ -149,20 +138,17 @@ export default function RoleSummary({
                     </span>
                   )}
 
-                  {role.level && (
+                  {role.experienceLevel && (
                     <span
                       className="
                         rounded-md
-                        border
-                        border-border
-                        px-2.5
-                        py-1
-                        text-xs
-                        font-medium
+                        border border-border
+                        px-2.5 py-1
+                        text-xs font-medium
                         text-muted-foreground
                       "
                     >
-                      {role.level}
+                      {role.experienceLevel}
                     </span>
                   )}
                 </div>
@@ -170,7 +156,8 @@ export default function RoleSummary({
             </div>
           </div>
 
-          {/* TOP RIGHT CLOSE BUTTON */}
+          {/* CLOSE */}
+
           {onClose && (
             <button
               type="button"
@@ -178,23 +165,18 @@ export default function RoleSummary({
               aria-label="Close role details"
               title="Close"
               className="
-                absolute
-                right-4
-                top-4
-                inline-flex
-                h-9
-                w-9
-                shrink-0
-                items-center
-                justify-center
+                absolute right-4 top-4
+                inline-flex h-9 w-9
+                items-center justify-center
                 rounded-lg
-                border
-                border-border
+                border border-border
                 bg-background
                 text-muted-foreground
                 transition-colors
+
                 hover:bg-secondary
                 hover:text-foreground
+
                 focus:outline-none
                 focus:ring-2
                 focus:ring-ring/30
@@ -219,6 +201,7 @@ export default function RoleSummary({
             <div
               className="animate-pulse space-y-6"
               aria-label="Loading career role details"
+              aria-busy="true"
             >
               <div className="space-y-2">
                 <div className="h-4 w-32 rounded bg-muted" />
@@ -228,7 +211,7 @@ export default function RoleSummary({
 
               <div className="h-20 rounded-xl bg-muted" />
 
-              <div className="h-24 rounded-xl bg-muted" />
+              <div className="h-20 rounded-xl bg-muted" />
 
               <div className="space-y-3">
                 <div className="h-4 w-32 rounded bg-muted" />
@@ -248,8 +231,7 @@ export default function RoleSummary({
             <div
               role="alert"
               className="
-                flex
-                min-h-52
+                flex min-h-52
                 flex-col
                 items-center
                 justify-center
@@ -258,11 +240,8 @@ export default function RoleSummary({
             >
               <div
                 className="
-                  flex
-                  h-12
-                  w-12
-                  items-center
-                  justify-center
+                  flex h-12 w-12
+                  items-center justify-center
                   rounded-xl
                   bg-destructive/10
                 "
@@ -273,17 +252,29 @@ export default function RoleSummary({
                 />
               </div>
 
-              <h3 className="mt-4 text-lg font-semibold text-foreground">
+              <h3
+                className="
+                  mt-4
+                  text-lg font-semibold
+                  text-foreground
+                "
+              >
                 Unable to Load Career Role
               </h3>
 
-              <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+              <p
+                className="
+                  mt-2 max-w-md
+                  text-sm leading-6
+                  text-muted-foreground
+                "
+              >
                 {error}
               </p>
             </div>
           )}
 
-          {/* ROLE CONTENT */}
+          {/* ROLE */}
 
           {!loading && !error && role && (
             <>
@@ -291,11 +282,22 @@ export default function RoleSummary({
 
               {role.description && (
                 <section>
-                  <h3 className="text-sm font-semibold text-foreground">
+                  <h3
+                    className="
+                      text-sm font-semibold
+                      text-foreground
+                    "
+                  >
                     About this role
                   </h3>
 
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  <p
+                    className="
+                      mt-2
+                      text-sm leading-6
+                      text-muted-foreground
+                    "
+                  >
                     {role.description}
                   </p>
                 </section>
@@ -308,84 +310,77 @@ export default function RoleSummary({
                   className="
                     mt-6
                     rounded-xl
-                    border
-                    border-border
+                    border border-border
                     bg-muted/30
                     p-4
                   "
                 >
-                  <p className="text-xs font-medium text-muted-foreground">
+                  <p
+                    className="
+                      text-xs font-medium
+                      text-muted-foreground
+                    "
+                  >
                     Salary Range
                   </p>
 
-                  <p className="mt-1 text-sm font-semibold text-foreground">
+                  <p
+                    className="
+                      mt-1
+                      text-sm font-semibold
+                      text-foreground
+                    "
+                  >
                     {role.salaryRange}
                   </p>
                 </section>
               )}
 
-              {/* MATCH SCORE */}
+              {/* REQUIRED SKILLS COUNT */}
 
-              {matchScore !== null && (
-                <section
+              <section
+                className="
+                  mt-6
+                  flex items-center
+                  justify-between
+                  rounded-xl
+                  border border-border
+                  bg-muted/30
+                  p-4
+                "
+              >
+                <div className="flex items-center gap-2">
+                  <Layers3
+                    className="h-4 w-4 text-primary"
+                    aria-hidden="true"
+                  />
+
+                  <span
+                    className="
+                      text-sm font-medium
+                      text-foreground
+                    "
+                  >
+                    Required Skills
+                  </span>
+                </div>
+
+                <span
                   className="
-                    mt-6
-                    rounded-xl
-                    border
-                    border-border
-                    bg-muted/30
-                    p-4
+                    rounded-md
+                    bg-secondary
+                    px-2.5 py-1
+                    text-xs font-semibold
+                    text-secondary-foreground
                   "
                 >
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        Skill Match
-                      </p>
-
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Based on your current skills
-                      </p>
-                    </div>
-
-                    <span className="text-xl font-bold text-primary">
-                      {matchScore}%
-                    </span>
-                  </div>
-
-                  <div
-                    className="
-                      mt-3
-                      h-2
-                      overflow-hidden
-                      rounded-full
-                      bg-muted
-                    "
-                    role="progressbar"
-                    aria-valuenow={matchScore}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label="Skill match score"
-                  >
-                    <div
-                      className="
-                        h-full
-                        rounded-full
-                        bg-primary
-                        transition-all
-                        duration-500
-                      "
-                      style={{
-                        width: `${matchScore}%`,
-                      }}
-                    />
-                  </div>
-                </section>
-              )}
+                  {skillCount}
+                </span>
+              </section>
 
               {/* REQUIRED SKILLS */}
 
-              {hasSkills && (
+              {skills.length > 0 && (
                 <section className="mt-6">
                   <div className="flex items-center gap-2">
                     <Layers3
@@ -393,73 +388,183 @@ export default function RoleSummary({
                       aria-hidden="true"
                     />
 
-                    <h3 className="text-sm font-semibold text-foreground">
+                    <h3
+                      className="
+                        text-sm font-semibold
+                        text-foreground
+                      "
+                    >
                       Required Skills
                     </h3>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {role.skills!.map((skill) => (
-                      <span
-                        key={skill}
+                  <div
+                    className="
+                      mt-3
+                      grid grid-cols-1
+                      gap-2
+                      sm:grid-cols-2
+                    "
+                  >
+                    {skills.map((skill) => (
+                      <div
+                        key={skill.id}
                         className="
-                          inline-flex
-                          items-center
-                          gap-1.5
-                          rounded-md
-                          border
-                          border-border
+                          flex items-start
+                          gap-2.5
+                          rounded-lg
+                          border border-border
                           bg-background
-                          px-3
-                          py-1.5
-                          text-xs
-                          font-medium
-                          text-foreground
+                          px-3 py-2.5
                         "
                       >
                         <CheckCircle2
-                          className="h-3.5 w-3.5 text-primary"
+                          className="
+                            mt-0.5
+                            h-4 w-4
+                            shrink-0
+                            text-primary
+                          "
                           aria-hidden="true"
                         />
 
-                        {skill}
-                      </span>
+                        <div className="min-w-0">
+                          <p
+                            className="
+                              truncate
+                              text-xs font-medium
+                              text-foreground
+                            "
+                          >
+                            {skill.name}
+                          </p>
+
+                          {skill.category && (
+                            <p
+                              className="
+                                mt-0.5
+                                truncate
+                                text-[11px]
+                                text-muted-foreground
+                              "
+                            >
+                              {skill.category}
+                            </p>
+                          )}
+
+                          {skill.required !== undefined && (
+                            <p
+                              className="
+                                mt-1
+                                text-[10px]
+                                text-muted-foreground
+                              "
+                            >
+                              {skill.required
+                                ? "Required"
+                                : "Recommended"}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </section>
               )}
 
-              {/* RELATED SKILLS */}
+              {/* NO SKILLS */}
 
-              {hasRelatedSkills && (
+              {skills.length === 0 && (
                 <section
                   className="
                     mt-6
-                    flex
-                    items-center
-                    justify-between
-                    border-t
+                    rounded-xl
+                    border border-dashed
                     border-border
-                    pt-4
+                    p-4
                   "
                 >
-                  <span className="text-xs text-muted-foreground">
-                    Related skills
-                  </span>
-
-                  <span
+                  <p
                     className="
-                      rounded-md
-                      bg-secondary
-                      px-2.5
-                      py-1
-                      text-xs
-                      font-medium
-                      text-secondary-foreground
+                      text-center
+                      text-sm
+                      text-muted-foreground
                     "
                   >
-                    {role.relatedSkills}
-                  </span>
+                    No required skills found for this role.
+                  </p>
+                </section>
+              )}
+
+              {/* RELATED ROLES */}
+
+              {relatedRoles.length > 0 && (
+                <section className="mt-6">
+                  <h3
+                    className="
+                      text-sm font-semibold
+                      text-foreground
+                    "
+                  >
+                    Related Career Paths
+                  </h3>
+
+                  <div className="mt-3 space-y-2">
+                    {relatedRoles
+                      .slice(0, 5)
+                      .map((relatedRole) => (
+                        <div
+                          key={relatedRole.id}
+                          className="
+                            flex items-center
+                            justify-between
+                            gap-3
+                            rounded-lg
+                            border border-border
+                            bg-background
+                            px-3 py-2.5
+                          "
+                        >
+                          <div className="min-w-0">
+                            <p
+                              className="
+                                truncate
+                                text-xs font-medium
+                                text-foreground
+                              "
+                            >
+                              {relatedRole.name}
+                            </p>
+
+                            <p
+                              className="
+                                mt-0.5
+                                truncate
+                                text-[11px]
+                                text-muted-foreground
+                              "
+                            >
+                              {relatedRole.category}
+                            </p>
+                          </div>
+
+                          {relatedRole.experienceLevel && (
+                            <span
+                              className="
+                                shrink-0
+                                rounded-md
+                                bg-secondary
+                                px-2 py-1
+                                text-[11px]
+                                text-secondary-foreground
+                              "
+                            >
+                              {relatedRole.experienceLevel}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                  </div>
                 </section>
               )}
             </>
@@ -473,22 +578,17 @@ export default function RoleSummary({
         {!loading && (
           <footer
             className="
-              flex
-              shrink-0
+              flex shrink-0
               flex-col-reverse
               gap-3
-              border-t
-              border-border
+              border-t border-border
               bg-card
-              px-6
-              py-4
+              px-6 py-4
               sm:flex-row
               sm:justify-end
               sm:px-7
             "
           >
-            {/* CLOSE BUTTON */}
-
             {onClose && (
               <button
                 type="button"
@@ -499,16 +599,15 @@ export default function RoleSummary({
                   justify-center
                   gap-2
                   rounded-lg
-                  border
-                  border-border
+                  border border-border
                   bg-background
-                  px-4
-                  py-2.5
-                  text-sm
-                  font-medium
+                  px-4 py-2.5
+                  text-sm font-medium
                   text-foreground
                   transition-colors
+
                   hover:bg-secondary
+
                   focus:outline-none
                   focus:ring-2
                   focus:ring-ring/30
@@ -523,8 +622,6 @@ export default function RoleSummary({
               </button>
             )}
 
-            {/* EXPLORE */}
-
             {!error && role && onExplore && (
               <button
                 type="button"
@@ -536,13 +633,13 @@ export default function RoleSummary({
                   gap-2
                   rounded-lg
                   bg-primary
-                  px-4
-                  py-2.5
-                  text-sm
-                  font-medium
+                  px-4 py-2.5
+                  text-sm font-medium
                   text-primary-foreground
                   transition-opacity
+
                   hover:opacity-90
+
                   focus:outline-none
                   focus:ring-2
                   focus:ring-primary/30

@@ -33,7 +33,8 @@ export default function GraphEdge({
 
   const length = Math.sqrt(dx * dx + dy * dy);
 
-  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const angle =
+    (Math.atan2(dy, dx) * 180) / Math.PI;
 
   const labelX = (x1 + x2) / 2;
   const labelY = (y1 + y2) / 2;
@@ -63,7 +64,9 @@ export default function GraphEdge({
         y2={y2}
         stroke="currentColor"
         strokeWidth={active ? 2.5 : 1.5}
-        strokeDasharray={dashed ? "6 5" : undefined}
+        strokeDasharray={
+          dashed ? "6 5" : undefined
+        }
         strokeLinecap="round"
         className={
           active
@@ -102,8 +105,6 @@ export default function GraphEdge({
             translate(${labelX} ${labelY})
           `}
         >
-          {/* Label Background */}
-
           <rect
             x="-42"
             y="-11"
@@ -115,8 +116,6 @@ export default function GraphEdge({
               stroke-border
             "
           />
-
-          {/* Label Text */}
 
           <text
             x="0"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import RoleList from "./RoleList";
 import RoleSearch from "./RoleSearch";
@@ -10,6 +11,8 @@ import useRoles from "../../hooks/useRoles";
 import type { Role } from "../../types/role";
 
 export default function RolesExplorer() {
+  const router = useRouter();
+
   const {
     roles = [],
     loading,
@@ -44,13 +47,15 @@ export default function RolesExplorer() {
           skill.name,
           skill.slug,
           skill.category,
+          skill.description,
         ]),
       ];
 
       return searchableValues
         .filter(
           (value): value is string =>
-            typeof value === "string" && value.length > 0,
+            typeof value === "string" &&
+            value.trim().length > 0,
         )
         .some((value) =>
           value.toLowerCase().includes(query),
@@ -89,14 +94,24 @@ export default function RolesExplorer() {
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener(
+      "keydown",
+      handleKeyDown,
+    );
 
-    const originalOverflow = document.body.style.overflow;
+    const originalOverflow =
+      document.body.style.overflow;
+
     document.body.style.overflow = "hidden";
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = originalOverflow;
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown,
+      );
+
+      document.body.style.overflow =
+        originalOverflow;
     };
   }, [selectedRole, clearSelectedRole]);
 
@@ -105,11 +120,16 @@ export default function RolesExplorer() {
   // ============================================================
 
   const handleExplore = (role: Role) => {
-    console.log("Explore role:", role);
+    clearSelectedRole();
 
-    // Later:
-    // router.push(`/roles/${role.slug}`);
+    router.push(
+      `/roles/${encodeURIComponent(role.id)}`,
+    );
   };
+
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   return (
     <section className="space-y-8">
@@ -117,20 +137,49 @@ export default function RolesExplorer() {
           PAGE HEADER
       ======================================================== */}
 
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <header
+        className="
+          flex flex-col gap-4
+          sm:flex-row
+          sm:items-end
+          sm:justify-between
+        "
+      >
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+          <h1
+            className="
+              text-2xl font-bold tracking-tight
+              text-foreground
+              sm:text-3xl
+            "
+          >
             Explore Career Roles
           </h1>
 
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-            Discover career opportunities, required skills,
-            salary ranges, and related career paths.
+          <p
+            className="
+              mt-2 max-w-2xl
+              text-sm leading-6
+              text-muted-foreground
+              sm:text-base
+            "
+          >
+            Discover career opportunities, required
+            skills, salary ranges, and related career
+            paths.
           </p>
         </div>
 
         {!loading && !error && (
-          <div className="shrink-0 rounded-lg border border-border bg-card px-3 py-2">
+          <div
+            className="
+              shrink-0
+              rounded-lg
+              border border-border
+              bg-card
+              px-3 py-2
+            "
+          >
             <span className="text-sm font-semibold text-foreground">
               {filteredRoles.length}
             </span>{" "}
@@ -165,11 +214,9 @@ export default function RolesExplorer() {
           role="alert"
           className="
             rounded-xl
-            border
-            border-destructive/20
+            border border-destructive/20
             bg-destructive/5
-            px-4
-            py-3
+            px-4 py-3
           "
         >
           <p className="text-sm font-medium text-destructive">

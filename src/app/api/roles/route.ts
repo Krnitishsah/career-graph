@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 import {
   getAllRoles,
-  getRoleBySlug,
   searchRoles,
   createRole,
 } from "../../../lib/services/role.service";
@@ -12,11 +11,23 @@ import {
   roleQuerySchema,
 } from "../../../lib/validations/role.validation";
 
+// ============================================================
+// GET ALL / SEARCH / FILTER ROLES
+// ============================================================
+
 export async function GET(request: NextRequest) {
   try {
+    // --------------------------------------------------------
+    // READ QUERY PARAMETERS
+    // --------------------------------------------------------
+
     const searchParams = Object.fromEntries(
-      request.nextUrl.searchParams.entries()
+      request.nextUrl.searchParams.entries(),
     );
+
+    // --------------------------------------------------------
+    // VALIDATE QUERY
+    // --------------------------------------------------------
 
     const validation =
       roleQuerySchema.safeParse(searchParams);
@@ -29,7 +40,7 @@ export async function GET(request: NextRequest) {
           errors:
             validation.error.flatten().fieldErrors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -41,25 +52,56 @@ export async function GET(request: NextRequest) {
 
     let roles;
 
-    if (search) {
-      roles = await searchRoles(search);
-    } else if (category || experienceLevel) {
+    // --------------------------------------------------------
+    // SEARCH ROLES
+    // --------------------------------------------------------
+
+    if (search?.trim()) {
+      roles = await searchRoles(
+        search.trim(),
+      );
+    }
+
+    // --------------------------------------------------------
+    // FILTER ROLES
+    // --------------------------------------------------------
+
+    else if (
+      category ||
+      experienceLevel
+    ) {
       roles = await getAllRoles({
         category,
         experienceLevel,
       });
-    } else {
+    }
+
+    // --------------------------------------------------------
+    // GET ALL ROLES
+    // --------------------------------------------------------
+
+    else {
       roles = await getAllRoles();
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Roles fetched successfully",
-      data: roles,
-      count: roles.length,
-    });
+    // --------------------------------------------------------
+    // SUCCESS RESPONSE
+    // --------------------------------------------------------
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Roles fetched successfully",
+        data: roles,
+        count: roles.length,
+      },
+      { status: 200 },
+    );
   } catch (error) {
-    console.error("Roles API error:", error);
+    console.error(
+      "GET /api/roles error:",
+      error,
+    );
 
     return NextResponse.json(
       {
@@ -70,14 +112,28 @@ export async function GET(request: NextRequest) {
             ? error.message
             : "Unknown role error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-export async function POST(request: NextRequest) {
+// ============================================================
+// CREATE ROLE
+// ============================================================
+
+export async function POST(
+  request: NextRequest,
+) {
   try {
+    // --------------------------------------------------------
+    // PARSE REQUEST BODY
+    // --------------------------------------------------------
+
     const body = await request.json();
+
+    // --------------------------------------------------------
+    // VALIDATE BODY
+    // --------------------------------------------------------
 
     const validation =
       createRoleSchema.safeParse(body);
@@ -90,13 +146,21 @@ export async function POST(request: NextRequest) {
           errors:
             validation.error.flatten().fieldErrors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
+    // --------------------------------------------------------
+    // CREATE ROLE
+    // --------------------------------------------------------
+
     const role = await createRole(
-      validation.data
+      validation.data,
     );
+
+    // --------------------------------------------------------
+    // SUCCESS RESPONSE
+    // --------------------------------------------------------
 
     return NextResponse.json(
       {
@@ -104,12 +168,12 @@ export async function POST(request: NextRequest) {
         message: "Role created successfully",
         data: role,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error(
-      "Create role API error:",
-      error
+      "POST /api/roles error:",
+      error,
     );
 
     return NextResponse.json(
@@ -121,7 +185,7 @@ export async function POST(request: NextRequest) {
             ? error.message
             : "Unknown role error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

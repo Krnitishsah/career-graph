@@ -3,112 +3,231 @@
 // ============================================================
 
 // ------------------------------------------------------------
-// GET ALL ROLES
+// GET ALL ROLES WITH REQUIRED SKILLS
 // ------------------------------------------------------------
 
 export const GET_ALL_ROLES = `
   MATCH (r:Role)
+
+  OPTIONAL MATCH (r)-[:REQUIRES]->(s:Skill)
+
   RETURN
     r.id AS id,
     r.name AS name,
     r.slug AS slug,
     r.category AS category,
-    r.level AS level,
+    r.experienceLevel AS experienceLevel,
     r.description AS description,
-    r.salaryRange AS salaryRange
+    r.salaryRange AS salaryRange,
+
+    collect(
+      DISTINCT CASE
+        WHEN s IS NULL THEN NULL
+        ELSE {
+          id: s.id,
+          name: s.name,
+          slug: s.slug,
+          category: s.category,
+          description: s.description
+        }
+      END
+    ) AS skills
+
   ORDER BY r.name ASC
 `;
 
 // ------------------------------------------------------------
-// GET ROLE BY ID
+// GET ROLE BY ID WITH REQUIRED SKILLS
 // ------------------------------------------------------------
 
 export const GET_ROLE_BY_ID = `
   MATCH (r:Role {id: $id})
+
+  OPTIONAL MATCH (r)-[:REQUIRES]->(s:Skill)
+
   RETURN
     r.id AS id,
     r.name AS name,
     r.slug AS slug,
     r.category AS category,
-    r.level AS level,
+    r.experienceLevel AS experienceLevel,
     r.description AS description,
-    r.salaryRange AS salaryRange
+    r.salaryRange AS salaryRange,
+
+    collect(
+      DISTINCT CASE
+        WHEN s IS NULL THEN NULL
+        ELSE {
+          id: s.id,
+          name: s.name,
+          slug: s.slug,
+          category: s.category,
+          description: s.description
+        }
+      END
+    ) AS skills
+
   LIMIT 1
 `;
 
 // ------------------------------------------------------------
-// GET ROLE BY SLUG
+// GET ROLE BY SLUG WITH REQUIRED SKILLS
 // ------------------------------------------------------------
 
 export const GET_ROLE_BY_SLUG = `
   MATCH (r:Role {slug: $slug})
+
+  OPTIONAL MATCH (r)-[:REQUIRES]->(s:Skill)
+
   RETURN
     r.id AS id,
     r.name AS name,
     r.slug AS slug,
     r.category AS category,
-    r.level AS level,
+    r.experienceLevel AS experienceLevel,
     r.description AS description,
-    r.salaryRange AS salaryRange
+    r.salaryRange AS salaryRange,
+
+    collect(
+      DISTINCT CASE
+        WHEN s IS NULL THEN NULL
+        ELSE {
+          id: s.id,
+          name: s.name,
+          slug: s.slug,
+          category: s.category,
+          description: s.description
+        }
+      END
+    ) AS skills
+
   LIMIT 1
 `;
 
 // ------------------------------------------------------------
-// SEARCH ROLES
+// SEARCH ROLES WITH REQUIRED SKILLS
 // ------------------------------------------------------------
 
 export const SEARCH_ROLES = `
   MATCH (r:Role)
+
+  OPTIONAL MATCH (r)-[:REQUIRES]->(s:Skill)
+
+  WITH
+    r,
+    collect(
+      DISTINCT CASE
+        WHEN s IS NULL THEN NULL
+        ELSE {
+          id: s.id,
+          name: s.name,
+          slug: s.slug,
+          category: s.category,
+          description: s.description
+        }
+      END
+    ) AS skills
+
   WHERE
     toLower(coalesce(r.name, "")) CONTAINS toLower($search)
     OR
     toLower(coalesce(r.slug, "")) CONTAINS toLower($search)
     OR
     toLower(coalesce(r.category, "")) CONTAINS toLower($search)
+    OR
+    toLower(coalesce(r.experienceLevel, "")) CONTAINS toLower($search)
+    OR
+    any(
+      skill IN skills
+      WHERE
+        skill IS NOT NULL
+        AND (
+          toLower(coalesce(skill.name, "")) CONTAINS toLower($search)
+          OR
+          toLower(coalesce(skill.slug, "")) CONTAINS toLower($search)
+          OR
+          toLower(coalesce(skill.category, "")) CONTAINS toLower($search)
+        )
+    )
 
   RETURN
     r.id AS id,
     r.name AS name,
     r.slug AS slug,
     r.category AS category,
-    r.level AS level,
+    r.experienceLevel AS experienceLevel,
     r.description AS description,
-    r.salaryRange AS salaryRange
+    r.salaryRange AS salaryRange,
+    skills AS skills
 
   ORDER BY r.name ASC
 `;
 
 // ------------------------------------------------------------
-// GET ROLES BY CATEGORY
+// GET ROLES BY CATEGORY WITH REQUIRED SKILLS
 // ------------------------------------------------------------
 
 export const GET_ROLES_BY_CATEGORY = `
   MATCH (r:Role {category: $category})
+
+  OPTIONAL MATCH (r)-[:REQUIRES]->(s:Skill)
+
   RETURN
     r.id AS id,
     r.name AS name,
     r.slug AS slug,
     r.category AS category,
-    r.level AS level,
+    r.experienceLevel AS experienceLevel,
     r.description AS description,
-    r.salaryRange AS salaryRange
+    r.salaryRange AS salaryRange,
+
+    collect(
+      DISTINCT CASE
+        WHEN s IS NULL THEN NULL
+        ELSE {
+          id: s.id,
+          name: s.name,
+          slug: s.slug,
+          category: s.category,
+          description: s.description
+        }
+      END
+    ) AS skills
+
   ORDER BY r.name ASC
 `;
 
 // ------------------------------------------------------------
-// GET ROLES BY LEVEL
+// GET ROLES BY EXPERIENCE LEVEL WITH REQUIRED SKILLS
 // ------------------------------------------------------------
 
 export const GET_ROLES_BY_LEVEL = `
-  MATCH (r:Role {level: $level})
+  MATCH (r:Role {experienceLevel: $experienceLevel})
+
+  OPTIONAL MATCH (r)-[:REQUIRES]->(s:Skill)
+
   RETURN
     r.id AS id,
     r.name AS name,
     r.slug AS slug,
     r.category AS category,
-    r.level AS level,
+    r.experienceLevel AS experienceLevel,
     r.description AS description,
-    r.salaryRange AS salaryRange
+    r.salaryRange AS salaryRange,
+
+    collect(
+      DISTINCT CASE
+        WHEN s IS NULL THEN NULL
+        ELSE {
+          id: s.id,
+          name: s.name,
+          slug: s.slug,
+          category: s.category,
+          description: s.description
+        }
+      END
+    ) AS skills
+
   ORDER BY r.name ASC
 `;
 
@@ -122,7 +241,7 @@ export const CREATE_ROLE = `
     name: $name,
     slug: $slug,
     category: $category,
-    level: $level,
+    experienceLevel: $experienceLevel,
     description: $description,
     salaryRange: $salaryRange
   })
@@ -132,9 +251,10 @@ export const CREATE_ROLE = `
     r.name AS name,
     r.slug AS slug,
     r.category AS category,
-    r.level AS level,
+    r.experienceLevel AS experienceLevel,
     r.description AS description,
-    r.salaryRange AS salaryRange
+    r.salaryRange AS salaryRange,
+    [] AS skills
 `;
 
 // ------------------------------------------------------------
@@ -145,21 +265,45 @@ export const UPDATE_ROLE = `
   MATCH (r:Role {id: $id})
 
   SET
-    r.name = $name,
-    r.slug = $slug,
-    r.category = $category,
-    r.level = $level,
-    r.description = $description,
-    r.salaryRange = $salaryRange
+    r.name = coalesce($name, r.name),
+    r.slug = coalesce($slug, r.slug),
+    r.category = coalesce($category, r.category),
+    r.experienceLevel = coalesce(
+      $experienceLevel,
+      r.experienceLevel
+    ),
+    r.description = coalesce(
+      $description,
+      r.description
+    ),
+    r.salaryRange = coalesce(
+      $salaryRange,
+      r.salaryRange
+    )
+
+  OPTIONAL MATCH (r)-[:REQUIRES]->(s:Skill)
 
   RETURN
     r.id AS id,
     r.name AS name,
     r.slug AS slug,
     r.category AS category,
-    r.level AS level,
+    r.experienceLevel AS experienceLevel,
     r.description AS description,
-    r.salaryRange AS salaryRange
+    r.salaryRange AS salaryRange,
+
+    collect(
+      DISTINCT CASE
+        WHEN s IS NULL THEN NULL
+        ELSE {
+          id: s.id,
+          name: s.name,
+          slug: s.slug,
+          category: s.category,
+          description: s.description
+        }
+      END
+    ) AS skills
 `;
 
 // ------------------------------------------------------------
@@ -168,6 +312,8 @@ export const UPDATE_ROLE = `
 
 export const DELETE_ROLE = `
   MATCH (r:Role {id: $id})
+
+  WITH r
 
   DETACH DELETE r
 
@@ -180,6 +326,7 @@ export const DELETE_ROLE = `
 
 export const GET_ROLE_SKILLS = `
   MATCH (r:Role {id: $id})
+
   OPTIONAL MATCH (r)-[:REQUIRES]->(s:Skill)
 
   RETURN
@@ -187,11 +334,12 @@ export const GET_ROLE_SKILLS = `
     r.name AS name,
     r.slug AS slug,
     r.category AS category,
-    r.level AS level,
+    r.experienceLevel AS experienceLevel,
     r.description AS description,
     r.salaryRange AS salaryRange,
+
     collect(
-      CASE
+      DISTINCT CASE
         WHEN s IS NULL THEN NULL
         ELSE {
           id: s.id,
@@ -207,18 +355,17 @@ export const GET_ROLE_SKILLS = `
 // ------------------------------------------------------------
 // GET ROLE WITH RELATED ROLES
 // ------------------------------------------------------------
-//
-// Two roles are considered related when they share required
-// skills.
-// ------------------------------------------------------------
 
 export const GET_ROLE_WITH_RELATED_ROLES = `
   MATCH (r:Role {id: $id})
 
   OPTIONAL MATCH (r)-[:REQUIRES]->(skill:Skill)
+
   OPTIONAL MATCH (related:Role)-[:REQUIRES]->(skill)
 
-  WHERE related IS NULL OR related.id <> r.id
+  WHERE
+    related IS NULL
+    OR related.id <> r.id
 
   WITH
     r,
@@ -229,21 +376,23 @@ export const GET_ROLE_WITH_RELATED_ROLES = `
     r.name AS name,
     r.slug AS slug,
     r.category AS category,
-    r.level AS level,
+    r.experienceLevel AS experienceLevel,
     r.description AS description,
     r.salaryRange AS salaryRange,
+
     [
       role IN relatedRoles
       WHERE role IS NOT NULL
-      | {
-          id: role.id,
-          name: role.name,
-          slug: role.slug,
-          category: role.category,
-          level: role.level,
-          description: role.description,
-          salaryRange: role.salaryRange
-        }
+      |
+      {
+        id: role.id,
+        name: role.name,
+        slug: role.slug,
+        category: role.category,
+        experienceLevel: role.experienceLevel,
+        description: role.description,
+        salaryRange: role.salaryRange
+      }
     ] AS relatedRoles
 `;
 
@@ -253,7 +402,12 @@ export const GET_ROLE_WITH_RELATED_ROLES = `
 
 export const ROLE_EXISTS = `
   MATCH (r:Role)
-  WHERE r.id = $id OR r.slug = $slug
+
+  WHERE
+    ($id <> "" AND r.id = $id)
+    OR
+    ($slug <> "" AND r.slug = $slug)
+
   RETURN count(r) > 0 AS exists
 `;
 
@@ -263,5 +417,6 @@ export const ROLE_EXISTS = `
 
 export const COUNT_ROLES = `
   MATCH (r:Role)
+
   RETURN count(r) AS count
 `;

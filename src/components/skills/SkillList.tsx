@@ -14,10 +14,6 @@ export default function SkillList({
   emptyMessage = "No skills found.",
   loading = false,
 }: SkillListProps) {
-  // ============================================================
-  // LOADING
-  // ============================================================
-
   if (loading) {
     return (
       <div
@@ -43,10 +39,6 @@ export default function SkillList({
       </div>
     );
   }
-
-  // ============================================================
-  // EMPTY
-  // ============================================================
 
   if (!skills.length) {
     return (
@@ -74,10 +66,6 @@ export default function SkillList({
     );
   }
 
-  // ============================================================
-  // LIST
-  // ============================================================
-
   return (
     <div
       className="
@@ -89,16 +77,8 @@ export default function SkillList({
       {skills.map((skill, index) => (
         <SkillCard
           key={skill.id || `${skill.slug}-${index}`}
-          name={skill.name}
-          category={skill.category}
-          level={skill.level}
-          description={skill.description ?? undefined}
-          relatedRoles={skill.relatedRoles}
-          onClick={
-            onSkillClick
-              ? () => onSkillClick(skill)
-              : undefined
-          }
+          skill={skill}
+          onClick={onSkillClick}
         />
       ))}
     </div>

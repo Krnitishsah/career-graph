@@ -22,6 +22,17 @@ export const skillCategorySchema = z.enum([
 ]);
 
 // ============================================================
+// SKILL LEVEL
+// ============================================================
+
+export const skillLevelSchema = z.enum([
+  "Beginner",
+  "Intermediate",
+  "Advanced",
+  "Expert",
+]);
+
+// ============================================================
 // CREATE SKILL
 // ============================================================
 
@@ -29,23 +40,14 @@ export const createSkillSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(
-      2,
-      "Skill name must be at least 2 characters"
-    )
-    .max(
-      100,
-      "Skill name must not exceed 100 characters"
-    ),
+    .min(2)
+    .max(100),
 
   slug: z
     .string()
     .trim()
-    .min(2, "Skill slug is required")
-    .max(
-      120,
-      "Skill slug must not exceed 120 characters"
-    )
+    .min(2)
+    .max(120)
     .regex(
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
       "Slug must contain only lowercase letters, numbers, and hyphens"
@@ -54,21 +56,17 @@ export const createSkillSchema = z.object({
   category: z
     .string()
     .trim()
-    .min(2, "Skill category is required")
-    .max(
-      100,
-      "Skill category must not exceed 100 characters"
-    ),
+    .min(2)
+    .max(100),
 
   description: z
     .string()
     .trim()
-    .max(
-      1000,
-      "Description must not exceed 1000 characters"
-    )
+    .max(1000)
     .optional()
     .nullable(),
+
+  level: skillLevelSchema.optional(),
 });
 
 // ============================================================
@@ -76,35 +74,10 @@ export const createSkillSchema = z.object({
 // ============================================================
 
 export const updateSkillSchema =
-  createSkillSchema.partial().extend({
-    name: z
-      .string()
-      .trim()
-      .min(2)
-      .max(100)
-      .optional(),
-
-    slug: z
-      .string()
-      .trim()
-      .min(2)
-      .max(120)
-      .regex(
-        /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-        "Invalid slug format"
-      )
-      .optional(),
-
-    category: z
-      .string()
-      .trim()
-      .min(2)
-      .max(100)
-      .optional(),
-  });
+  createSkillSchema.partial();
 
 // ============================================================
-// SKILL ID PARAMS
+// SKILL ID
 // ============================================================
 
 export const skillIdSchema = z.object({
@@ -115,7 +88,7 @@ export const skillIdSchema = z.object({
 });
 
 // ============================================================
-// SKILL SLUG PARAMS
+// SKILL SLUG
 // ============================================================
 
 export const skillSlugSchema = z.object({
@@ -126,38 +99,20 @@ export const skillSlugSchema = z.object({
 });
 
 // ============================================================
-// SKILL SEARCH
-// ============================================================
-
-export const skillSearchSchema = z.object({
-  search: z
-    .string()
-    .trim()
-    .min(1, "Search query is required")
-    .max(
-      100,
-      "Search query must not exceed 100 characters"
-    ),
-
-  category: z
-    .string()
-    .trim()
-    .optional(),
-
-  limit: z
-    .coerce
-    .number()
-    .int()
-    .min(1)
-    .max(100)
-    .default(20),
-});
-
-// ============================================================
 // SKILL LIST QUERY
 // ============================================================
 
 export const skillQuerySchema = z.object({
+  id: z
+    .string()
+    .trim()
+    .optional(),
+
+  slug: z
+    .string()
+    .trim()
+    .optional(),
+
   category: z
     .string()
     .trim()
@@ -185,32 +140,56 @@ export const skillQuerySchema = z.object({
 });
 
 // ============================================================
+// SEARCH
+// ============================================================
+
+export const skillSearchSchema = z.object({
+  search: z
+    .string()
+    .trim()
+    .min(1)
+    .max(100),
+
+  category: z
+    .string()
+    .trim()
+    .optional(),
+
+  limit: z
+    .coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(20),
+});
+
+// ============================================================
 // RELATED SKILLS
 // ============================================================
 
-export const relatedSkillsSchema =
-  z.object({
-    id: z
-      .string()
-      .trim()
-      .min(1, "Skill ID is required"),
+export const relatedSkillsSchema = z.object({
+  id: z
+    .string()
+    .trim()
+    .min(1),
 
-    depth: z
-      .coerce
-      .number()
-      .int()
-      .min(1)
-      .max(5)
-      .default(1),
+  depth: z
+    .coerce
+    .number()
+    .int()
+    .min(1)
+    .max(5)
+    .default(1),
 
-    limit: z
-      .coerce
-      .number()
-      .int()
-      .min(1)
-      .max(100)
-      .default(20),
-  });
+  limit: z
+    .coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(20),
+});
 
 // ============================================================
 // VALIDATION HELPERS
@@ -291,7 +270,7 @@ export function safeValidateSkillSearch(
 }
 
 // ============================================================
-// VALIDATION ERROR FORMATTER
+// ERROR FORMATTER
 // ============================================================
 
 export function getSkillValidationErrors(
@@ -303,7 +282,8 @@ export function getSkillValidationErrors(
     };
   }
 
-  return error.flatten().fieldErrors as Record<
+  return error.flatten()
+    .fieldErrors as Record<
     string,
     string[]
   >;

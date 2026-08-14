@@ -10,9 +10,9 @@ import {
 import GraphFilters from "../../components/graph/GraphFilters";
 
 import useCareerGraph, {
+  type CareerGraph,
   type CareerRole,
   type CareerSkill,
-  type CareerGraph,
 } from "../../hooks/useCareerGraph";
 
 // ============================================================
@@ -24,10 +24,8 @@ export default function ExplorePage() {
     roles,
     loading,
     error,
-
     getRoles,
     getCareerGraph,
-
     clearError,
   } = useCareerGraph();
 
@@ -39,8 +37,9 @@ export default function ExplorePage() {
     CareerSkill[]
   >([]);
 
-  const [graph, setGraph] =
-    useState<CareerGraph | null>(null);
+  const [graph, setGraph] = useState<CareerGraph | null>(
+    null,
+  );
 
   const [nodeType, setNodeType] = useState("");
 
@@ -48,15 +47,14 @@ export default function ExplorePage() {
 
   const [limit, setLimit] = useState(25);
 
-  const [hasExplored, setHasExplored] =
-    useState(false);
+  const [hasExplored, setHasExplored] = useState(false);
 
   // ============================================================
   // LOAD ROLES
   // ============================================================
 
   useEffect(() => {
-    getRoles();
+    void getRoles();
   }, [getRoles]);
 
   // ============================================================
@@ -109,20 +107,23 @@ export default function ExplorePage() {
         return;
       }
 
-      clearError();
-
-      setHasExplored(true);
-
       const skillSlugs = skills
         .map((skill) => skill.slug)
-        .filter(Boolean);
+        .filter(
+          (slug): slug is string =>
+            Boolean(slug),
+        );
 
       if (!skillSlugs.length) {
         return;
       }
 
-      const data =
-        await getCareerGraph(skillSlugs);
+      clearError();
+      setHasExplored(true);
+
+      const data = await getCareerGraph(
+        skillSlugs,
+      );
 
       if (!data) {
         setGraph(null);
@@ -140,15 +141,10 @@ export default function ExplorePage() {
 
   const handleReset = useCallback(() => {
     setSelectedSkills([]);
-
     setGraph(null);
-
     setHasExplored(false);
-
     setNodeType("");
-
     setRelationship("");
-
     setLimit(25);
 
     clearError();
@@ -158,13 +154,15 @@ export default function ExplorePage() {
   // SELECTED SKILL IDS
   // ============================================================
 
-  const selectedSkillIds = useMemo(() => {
-    return new Set(
-      selectedSkills.map(
-        (skill) => skill.id,
+  const selectedSkillIds = useMemo(
+    () =>
+      new Set(
+        selectedSkills.map(
+          (skill) => skill.id,
+        ),
       ),
-    );
-  }, [selectedSkills]);
+    [selectedSkills],
+  );
 
   // ============================================================
   // GRAPH ROLE IDS
@@ -207,27 +205,30 @@ export default function ExplorePage() {
   }, [graph]);
 
   // ============================================================
-  // GRAPH RELATIONSHIP IDS
-  // ============================================================
-
-  const graphRelationshipIds = useMemo(() => {
-    if (!graph) {
-      return new Set<string>();
-    }
-
-    return new Set(
-      graph.relationships.map(
-        (relationship) =>
-          relationship.id,
-      ),
-    );
-  }, [graph]);
-
-  // ============================================================
   // FILTERED ROLES
   // ============================================================
 
   const filteredRoles = useMemo(() => {
+    /*
+     * The Career Roles section only displays roles.
+     * Therefore selecting "skill" as node type means
+     * there are no role cards to display.
+     */
+    if (nodeType === "skill") {
+      return [];
+    }
+
+    /*
+     * Relationship filters require an explored graph.
+     */
+    if (
+      (relationship === "REQUIRES" ||
+        relationship === "RELATED_TO") &&
+      !graph
+    ) {
+      return [];
+    }
+
     let result = [...roles];
 
     // ----------------------------------------------------------
@@ -241,15 +242,7 @@ export default function ExplorePage() {
     }
 
     // ----------------------------------------------------------
-    // NODE TYPE
-    // ----------------------------------------------------------
-
-    if (nodeType === "skill") {
-      return [];
-    }
-
-    // ----------------------------------------------------------
-    // RELATIONSHIP
+    // REQUIRES
     // ----------------------------------------------------------
 
     if (
@@ -262,8 +255,7 @@ export default function ExplorePage() {
       graph.relationships.forEach(
         (relation) => {
           if (
-            relation.type !==
-            "REQUIRES"
+            relation.type !== "REQUIRES"
           ) {
             return;
           }
@@ -273,8 +265,8 @@ export default function ExplorePage() {
               relation.source,
             );
 
-          const targetIsSkill =
-            graphSkillIds.has(
+          const targetIsRole =
+            graphRoleIds.has(
               relation.target,
             );
 
@@ -283,11 +275,14 @@ export default function ExplorePage() {
               relation.source,
             );
 
-          const targetIsRole =
-            graphRoleIds.has(
+          const targetIsSkill =
+            graphSkillIds.has(
               relation.target,
             );
 
+          /*
+           * Role -> Skill
+           */
           if (
             sourceIsRole &&
             targetIsSkill
@@ -297,6 +292,9 @@ export default function ExplorePage() {
             );
           }
 
+          /*
+           * Skill -> Role
+           */
           if (
             sourceIsSkill &&
             targetIsRole
@@ -314,57 +312,22 @@ export default function ExplorePage() {
     }
 
     // ----------------------------------------------------------
-    // RELATED TO
+    // RELATED_TO
     // ----------------------------------------------------------
 
     if (
       relationship === "RELATED_TO" &&
       graph
     ) {
-      const relatedSkillIds =
-        new Set<string>();
-
-      graph.relationships.forEach(
-        (relation) => {
-          if (
-            relation.type !==
-            "RELATED_TO"
-          ) {
-            return;
-          }
-
-          if (
-            selectedSkillIds.has(
-              relation.source,
-            )
-          ) {
-            relatedSkillIds.add(
-              relation.target,
-            );
-          }
-
-          if (
-            selectedSkillIds.has(
-              relation.target,
-            )
-          ) {
-            relatedSkillIds.add(
-              relation.source,
-            );
-          }
-        },
-      );
-
-      // RELATED_TO connects skills,
-      // not roles.
-      //
-      // Therefore role list should be
-      // empty when only RELATED_TO is selected.
-      if (relatedSkillIds.size > 0) {
-        result = [];
-      } else {
-        result = [];
-      }
+      /*
+       * RELATED_TO connects skills to skills.
+       * It does not directly represent a career role.
+       *
+       * Therefore the Career Roles section should
+       * not display roles when this relationship
+       * filter is selected.
+       */
+      return [];
     }
 
     // ----------------------------------------------------------
@@ -377,7 +340,6 @@ export default function ExplorePage() {
     graph,
     graphRoleIds,
     graphSkillIds,
-    selectedSkillIds,
     hasExplored,
     nodeType,
     relationship,
@@ -437,17 +399,15 @@ export default function ExplorePage() {
     let relatedTo = 0;
 
     graph.relationships.forEach(
-      (relationship) => {
+      (relation) => {
         if (
-          relationship.type ===
-          "REQUIRES"
+          relation.type === "REQUIRES"
         ) {
           requires++;
         }
 
         if (
-          relationship.type ===
-          "RELATED_TO"
+          relation.type === "RELATED_TO"
         ) {
           relatedTo++;
         }
@@ -455,8 +415,7 @@ export default function ExplorePage() {
     );
 
     return {
-      total:
-        graph.relationships.length,
+      total: graph.relationships.length,
       requires,
       relatedTo,
     };
@@ -549,8 +508,6 @@ export default function ExplorePage() {
             shadow-sm
           "
         >
-          {/* HEADER */}
-
           <div
             className="
               flex
@@ -595,39 +552,21 @@ export default function ExplorePage() {
                 "
               >
                 <div>
-                  <span
-                    className="
-                      font-semibold
-                      text-foreground
-                    "
-                  >
+                  <span className="font-semibold text-foreground">
                     {graphNodeCounts.total}
                   </span>{" "}
-                  <span
-                    className="
-                      text-muted-foreground
-                    "
-                  >
+                  <span className="text-muted-foreground">
                     nodes
                   </span>
                 </div>
 
                 <div>
-                  <span
-                    className="
-                      font-semibold
-                      text-foreground
-                    "
-                  >
+                  <span className="font-semibold text-foreground">
                     {
                       relationshipCounts.total
                     }
                   </span>{" "}
-                  <span
-                    className="
-                      text-muted-foreground
-                    "
-                  >
+                  <span className="text-muted-foreground">
                     relationships
                   </span>
                 </div>
@@ -655,23 +594,11 @@ export default function ExplorePage() {
               "
             >
               <div className="text-center">
-                <p
-                  className="
-                    text-sm
-                    font-medium
-                    text-foreground
-                  "
-                >
+                <p className="text-sm font-medium text-foreground">
                   No graph loaded
                 </p>
 
-                <p
-                  className="
-                    mt-1
-                    text-xs
-                    text-muted-foreground
-                  "
-                >
+                <p className="mt-1 text-xs text-muted-foreground">
                   Select skills above and
                   explore the graph.
                 </p>
@@ -697,12 +624,7 @@ export default function ExplorePage() {
                 bg-background
               "
             >
-              <p
-                className="
-                  text-sm
-                  text-muted-foreground
-                "
-              >
+              <p className="text-sm text-muted-foreground">
                 Loading career graph...
               </p>
             </div>
@@ -805,12 +727,7 @@ export default function ExplorePage() {
               py-3
             "
           >
-            <p
-              className="
-                text-sm
-                text-destructive
-              "
-            >
+            <p className="text-sm text-destructive">
               {error}
             </p>
           </div>
@@ -821,8 +738,6 @@ export default function ExplorePage() {
         {/* ================================================== */}
 
         <section className="mt-8">
-          {/* HEADER */}
-
           <div
             className="
               mb-5
@@ -833,23 +748,11 @@ export default function ExplorePage() {
             "
           >
             <div>
-              <h2
-                className="
-                  text-xl
-                  font-semibold
-                  text-foreground
-                "
-              >
+              <h2 className="text-xl font-semibold text-foreground">
                 Career Roles
               </h2>
 
-              <p
-                className="
-                  mt-1
-                  text-sm
-                  text-muted-foreground
-                "
-              >
+              <p className="mt-1 text-sm text-muted-foreground">
                 Roles connected to your
                 selected skills.
               </p>
@@ -870,7 +773,9 @@ export default function ExplorePage() {
             </span>
           </div>
 
+          {/* ================================================= */}
           {/* EMPTY */}
+          {/* ================================================= */}
 
           {filteredRoles.length === 0 ? (
             <div
@@ -884,25 +789,13 @@ export default function ExplorePage() {
                 text-center
               "
             >
-              <p
-                className="
-                  text-sm
-                  font-medium
-                  text-foreground
-                "
-              >
+              <p className="text-sm font-medium text-foreground">
                 {hasExplored
                   ? "No matching career roles found."
                   : "Explore the graph to discover career roles."}
               </p>
 
-              <p
-                className="
-                  mt-1
-                  text-sm
-                  text-muted-foreground
-                "
-              >
+              <p className="mt-1 text-sm text-muted-foreground">
                 Try selecting different
                 skills or adjusting the
                 filters.
@@ -1007,9 +900,7 @@ function CareerRoleCard({
         hover:shadow-md
       "
     >
-      {/* ================================================== */}
       {/* HEADER */}
-      {/* ================================================== */}
 
       <div
         className="
@@ -1021,6 +912,7 @@ function CareerRoleCard({
       >
         <div className="min-w-0">
           <h3
+            title={role.name}
             className="
               truncate
               text-lg
@@ -1050,30 +942,31 @@ function CareerRoleCard({
         </div>
 
         {typeof role.matchScore ===
-          "number" && (
-          <span
-            className="
-              shrink-0
-              rounded-full
-              bg-primary/10
-              px-2.5
-              py-1
-              text-xs
-              font-semibold
-              text-primary
-            "
-          >
-            {Math.round(
-              role.matchScore,
-            )}
-            %
-          </span>
-        )}
+          "number" &&
+          Number.isFinite(
+            role.matchScore,
+          ) && (
+            <span
+              className="
+                shrink-0
+                rounded-full
+                bg-primary/10
+                px-2.5
+                py-1
+                text-xs
+                font-semibold
+                text-primary
+              "
+            >
+              {Math.round(
+                role.matchScore,
+              )}
+              %
+            </span>
+          )}
       </div>
 
-      {/* ================================================== */}
       {/* SALARY */}
-      {/* ================================================== */}
 
       {role.salaryRange && (
         <p
@@ -1088,9 +981,7 @@ function CareerRoleCard({
         </p>
       )}
 
-      {/* ================================================== */}
       {/* DESCRIPTION */}
-      {/* ================================================== */}
 
       {role.description && (
         <p
@@ -1106,13 +997,10 @@ function CareerRoleCard({
         </p>
       )}
 
-      {/* ================================================== */}
       {/* MATCHED SKILLS */}
-      {/* ================================================== */}
 
       {role.matchedSkills &&
-        role.matchedSkills.length >
-          0 && (
+        role.matchedSkills.length > 0 && (
           <div className="mt-4">
             <p
               className="
@@ -1153,13 +1041,10 @@ function CareerRoleCard({
           </div>
         )}
 
-      {/* ================================================== */}
       {/* MISSING SKILLS */}
-      {/* ================================================== */}
 
       {role.missingSkills &&
-        role.missingSkills.length >
-          0 && (
+        role.missingSkills.length > 0 && (
           <div className="mt-4">
             <p
               className="

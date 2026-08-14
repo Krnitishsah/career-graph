@@ -1,43 +1,104 @@
 "use client";
 
-import { RotateCcw, SlidersHorizontal } from "lucide-react";
+import {
+  RotateCcw,
+  SlidersHorizontal,
+} from "lucide-react";
 
-import type { RoleLevel } from "@/src/types/role";
+import type {
+  ExperienceLevel,
+} from "../../types/role";
+
+// ============================================================
+// PROPS
+// ============================================================
 
 interface RoleFiltersProps {
   category: string;
-  level: RoleLevel | "";
+
+  experienceLevel:
+    | ExperienceLevel
+    | "";
+
   categories: string[];
-  onCategoryChange: (category: string) => void;
-  onLevelChange: (level: RoleLevel | "") => void;
+
+  onCategoryChange: (
+    category: string,
+  ) => void;
+
+  onExperienceLevelChange: (
+    level: ExperienceLevel | "",
+  ) => void;
+
   onReset?: () => void;
+
   disabled?: boolean;
 }
 
-const levels: RoleLevel[] = [
-  "Entry-Level",
-  "Mid-Level",
-  "Senior-Level",
+// ============================================================
+// EXPERIENCE LEVELS
+// ============================================================
+
+const experienceLevels: ExperienceLevel[] = [
+  "Entry",
+  "Junior",
+  "Mid",
+  "Senior",
   "Lead",
 ];
 
+// ============================================================
+// COMPONENT
+// ============================================================
+
 export default function RoleFilters({
   category,
-  level,
+  experienceLevel,
   categories,
   onCategoryChange,
-  onLevelChange,
+  onExperienceLevelChange,
   onReset,
   disabled = false,
 }: RoleFiltersProps) {
-  const hasFilters = Boolean(category || level);
+  const hasFilters = Boolean(
+    category || experienceLevel,
+  );
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-        {/* Header */}
-        <div className="flex items-center gap-2 lg:mr-2 lg:mb-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+    <div
+      className="
+        rounded-xl
+        border border-border
+        bg-card
+        p-4
+        shadow-sm
+      "
+    >
+      <div
+        className="
+          flex flex-col gap-4
+          lg:flex-row
+          lg:items-end
+        "
+      >
+        {/* ==================================================
+            HEADER
+            ================================================== */}
+
+        <div
+          className="
+            flex items-center gap-2
+            lg:mr-2 lg:mb-2
+          "
+        >
+          <div
+            className="
+              flex h-8 w-8
+              items-center justify-center
+              rounded-lg
+              bg-primary/10
+            "
+          >
             <SlidersHorizontal
               className="h-4 w-4 text-primary"
               aria-hidden="true"
@@ -45,21 +106,38 @@ export default function RoleFilters({
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-foreground">
+            <p
+              className="
+                text-sm font-semibold
+                text-foreground
+              "
+            >
               Filters
             </p>
 
-            <p className="text-xs text-muted-foreground">
+            <p
+              className="
+                text-xs
+                text-muted-foreground
+              "
+            >
               Narrow down career roles
             </p>
           </div>
         </div>
 
-        {/* Category */}
+        {/* ==================================================
+            CATEGORY
+            ================================================== */}
+
         <div className="w-full lg:max-w-xs">
           <label
             htmlFor="role-category"
-            className="mb-1.5 block text-xs font-medium text-muted-foreground"
+            className="
+              mb-1.5 block
+              text-xs font-medium
+              text-muted-foreground
+            "
           >
             Category
           </label>
@@ -68,11 +146,14 @@ export default function RoleFilters({
             id="role-category"
             value={category}
             onChange={(event) =>
-              onCategoryChange(event.target.value)
+              onCategoryChange(
+                event.target.value,
+              )
             }
             disabled={disabled}
             className="
-              h-10 w-full rounded-lg
+              h-10 w-full
+              rounded-lg
               border border-border
               bg-background
               px-3
@@ -81,41 +162,57 @@ export default function RoleFilters({
               transition-colors
               hover:border-input
               focus:border-primary
-              focus:ring-4 focus:ring-ring/20
+              focus:ring-4
+              focus:ring-ring/20
               disabled:cursor-not-allowed
               disabled:opacity-60
             "
           >
-            <option value="">All categories</option>
+            <option value="">
+              All categories
+            </option>
 
             {categories.map((item) => (
-              <option key={item} value={item}>
+              <option
+                key={item}
+                value={item}
+              >
                 {item}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Level */}
+        {/* ==================================================
+            EXPERIENCE LEVEL
+            ================================================== */}
+
         <div className="w-full lg:max-w-xs">
           <label
-            htmlFor="role-level"
-            className="mb-1.5 block text-xs font-medium text-muted-foreground"
+            htmlFor="role-experience-level"
+            className="
+              mb-1.5 block
+              text-xs font-medium
+              text-muted-foreground
+            "
           >
             Experience Level
           </label>
 
           <select
-            id="role-level"
-            value={level}
+            id="role-experience-level"
+            value={experienceLevel}
             onChange={(event) =>
-              onLevelChange(
-                event.target.value as RoleLevel | ""
+              onExperienceLevelChange(
+                event.target.value as
+                  | ExperienceLevel
+                  | "",
               )
             }
             disabled={disabled}
             className="
-              h-10 w-full rounded-lg
+              h-10 w-full
+              rounded-lg
               border border-border
               bg-background
               px-3
@@ -124,30 +221,44 @@ export default function RoleFilters({
               transition-colors
               hover:border-input
               focus:border-primary
-              focus:ring-4 focus:ring-ring/20
+              focus:ring-4
+              focus:ring-ring/20
               disabled:cursor-not-allowed
               disabled:opacity-60
             "
           >
-            <option value="">All levels</option>
+            <option value="">
+              All levels
+            </option>
 
-            {levels.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
+            {experienceLevels.map(
+              (item) => (
+                <option
+                  key={item}
+                  value={item}
+                >
+                  {item}
+                </option>
+              ),
+            )}
           </select>
         </div>
 
-        {/* Reset */}
+        {/* ==================================================
+            RESET
+            ================================================== */}
+
         {hasFilters && onReset && (
           <button
             type="button"
             onClick={onReset}
             disabled={disabled}
             className="
-              inline-flex h-10 shrink-0
-              items-center justify-center gap-2
+              inline-flex h-10
+              shrink-0
+              items-center
+              justify-center
+              gap-2
               rounded-lg
               border border-border
               bg-background
@@ -158,7 +269,8 @@ export default function RoleFilters({
               hover:bg-secondary
               hover:text-foreground
               focus:outline-none
-              focus:ring-2 focus:ring-ring/30
+              focus:ring-2
+              focus:ring-ring/30
               disabled:cursor-not-allowed
               disabled:opacity-60
             "

@@ -2,68 +2,110 @@
 
 import type { KeyboardEvent } from "react";
 
-import type { CareerRole, RoleLevel } from "@/src/types/role";
+import type {
+  ExperienceLevel,
+  Role,
+} from "../../types/role";
+
+// ============================================================
+// PROPS
+// ============================================================
 
 interface RoleCardProps {
-  role?: CareerRole;
+  role?: Role;
+
   name?: string;
   category?: string;
-  level?: RoleLevel;
+  experienceLevel?: ExperienceLevel;
   description?: string;
   relatedSkills?: number;
   salaryRange?: string;
+
   onClick?: () => void;
 }
 
-const levelStyles: Record<RoleLevel, string> = {
-  "Entry-Level":
+// ============================================================
+// LEVEL STYLES
+// ============================================================
+
+const levelStyles: Record<
+  ExperienceLevel,
+  string
+> = {
+  Entry:
     "bg-slate-100 text-slate-700 border-slate-200",
-  "Mid-Level":
+
+  Junior:
+    "bg-cyan-50 text-cyan-700 border-cyan-200",
+
+  Mid:
     "bg-blue-50 text-blue-700 border-blue-200",
-  "Senior-Level":
+
+  Senior:
     "bg-violet-50 text-violet-700 border-violet-200",
+
   Lead:
     "bg-emerald-50 text-emerald-700 border-emerald-200",
 };
+
+// ============================================================
+// ROLE CARD
+// ============================================================
 
 export default function RoleCard({
   role,
   name,
   category,
-  level,
+  experienceLevel,
   description,
   relatedSkills,
   salaryRange,
   onClick,
 }: RoleCardProps) {
-  /*
-   * Supports both:
-   *
-   * <RoleCard role={role} />
-   *
-   * and the existing:
-   *
-   * <RoleCard
-   *   name={role.name}
-   *   category={role.category}
-   * />
-   */
+  // ----------------------------------------------------------
+  // NORMALIZE ROLE DATA
+  // ----------------------------------------------------------
 
-  const roleName = role?.name ?? name ?? "Untitled Role";
-  const roleCategory = role?.category ?? category;
-  const roleLevel = role?.level ?? level;
-  const roleDescription = role?.description ?? description;
-  const roleRelatedSkills =
-    role?.relatedSkills ?? relatedSkills;
+  const roleName =
+    role?.name ??
+    name ??
+    "Untitled Role";
+
+  const roleCategory =
+    role?.category ??
+    category;
+
+  const roleExperienceLevel =
+    role?.experienceLevel ??
+    experienceLevel;
+
+  const roleDescription =
+    role?.description ??
+    description;
+
   const roleSalaryRange =
-    role?.salaryRange ?? salaryRange;
+    role?.salaryRange ??
+    salaryRange;
 
-  const isClickable = typeof onClick === "function";
+  const roleRelatedSkills =
+    relatedSkills ??
+    (Array.isArray(role?.skills)
+      ? role.skills.length
+      : undefined);
+
+  const isClickable =
+    typeof onClick === "function";
+
+  // ----------------------------------------------------------
+  // KEYBOARD ACCESSIBILITY
+  // ----------------------------------------------------------
 
   const handleKeyDown = (
-    event: KeyboardEvent<HTMLElement>
+    event: KeyboardEvent<HTMLElement>,
   ) => {
-    if (!isClickable) return;
+    if (!isClickable) {
+      return;
+    }
 
     if (
       event.key === "Enter" ||
@@ -74,14 +116,32 @@ export default function RoleCard({
     }
   };
 
+  // ----------------------------------------------------------
+  // RENDER
+  // ----------------------------------------------------------
+
   return (
     <article
-      onClick={isClickable ? onClick : undefined}
-      onKeyDown={
-        isClickable ? handleKeyDown : undefined
+      onClick={
+        isClickable
+          ? onClick
+          : undefined
       }
-      tabIndex={isClickable ? 0 : undefined}
-      role={isClickable ? "button" : undefined}
+      onKeyDown={
+        isClickable
+          ? handleKeyDown
+          : undefined
+      }
+      tabIndex={
+        isClickable
+          ? 0
+          : undefined
+      }
+      role={
+        isClickable
+          ? "button"
+          : undefined
+      }
       aria-label={
         isClickable
           ? `View ${roleName} role`
@@ -108,7 +168,10 @@ export default function RoleCard({
         }
       `}
     >
-      {/* Header */}
+      {/* =====================================================
+          HEADER
+          ===================================================== */}
+
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <h3
@@ -134,8 +197,11 @@ export default function RoleCard({
           )}
         </div>
 
-        {/* Level */}
-        {roleLevel && (
+        {/* ===================================================
+            EXPERIENCE LEVEL
+            =================================================== */}
+
+        {roleExperienceLevel && (
           <span
             className={`
               inline-flex shrink-0
@@ -143,20 +209,31 @@ export default function RoleCard({
               rounded-full border
               px-3 py-1.5
               text-xs font-medium
-              ${levelStyles[roleLevel]}
+              ${
+                levelStyles[
+                  roleExperienceLevel
+                ]
+              }
             `}
           >
             <span
               aria-hidden="true"
-              className="h-1.5 w-1.5 rounded-full bg-current"
+              className="
+                h-1.5 w-1.5
+                rounded-full
+                bg-current
+              "
             />
 
-            {roleLevel}
+            {roleExperienceLevel}
           </span>
         )}
       </div>
 
-      {/* Description */}
+      {/* =====================================================
+          DESCRIPTION
+          ===================================================== */}
+
       {roleDescription && (
         <p
           className="
@@ -169,23 +246,41 @@ export default function RoleCard({
         </p>
       )}
 
-      {/* Salary */}
+      {/* =====================================================
+          SALARY
+          ===================================================== */}
+
       {roleSalaryRange && (
         <div className="mt-4">
           <p className="text-xs text-muted-foreground">
             Salary range
           </p>
 
-          <p className="mt-1 text-sm font-medium text-card-foreground">
+          <p
+            className="
+              mt-1 text-sm font-medium
+              text-card-foreground
+            "
+          >
             {roleSalaryRange}
           </p>
         </div>
       )}
 
-      {/* Footer */}
+      {/* =====================================================
+          FOOTER
+          ===================================================== */}
+
       <div className="mt-auto pt-5">
         {roleRelatedSkills !== undefined && (
-          <div className="flex items-center justify-between border-t border-border pt-4">
+          <div
+            className="
+              flex items-center
+              justify-between
+              border-t border-border
+              pt-4
+            "
+          >
             <span className="text-xs text-muted-foreground">
               Related skills
             </span>
@@ -203,11 +298,15 @@ export default function RoleCard({
           </div>
         )}
 
-        {/* Click hint */}
+        {/* ===================================================
+            CLICK HINT
+            =================================================== */}
+
         {isClickable && (
           <div
             className={`
-              flex items-center justify-end
+              flex items-center
+              justify-end
               ${
                 roleRelatedSkills !== undefined
                   ? "mt-3"
